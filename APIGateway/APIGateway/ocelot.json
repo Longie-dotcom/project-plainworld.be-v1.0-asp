@@ -1,0 +1,311 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/Users/{everything}",
+      "UpstreamPathTemplate": "/iam/user/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "iamms",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Roles/{everything}",
+      "UpstreamPathTemplate": "/iam/role/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "iamms",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Auth/{everything}",
+      "UpstreamPathTemplate": "/iam/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": ""
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "iamms",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Privileges/{everything}",
+      "UpstreamPathTemplate": "/iam/privilege/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "iamms",
+          "Port": 5000
+        }
+      ]
+    },
+
+    {
+      "DownstreamPathTemplate": "/api/Patient/{everything}",
+      "UpstreamPathTemplate": "/patient/patient/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "patientms",
+          "Port": 5010
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/MedicalRecord/{everything}",
+      "UpstreamPathTemplate": "/patient/medical-record/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "patientms",
+          "Port": 5010
+        }
+      ]
+    },
+
+    {
+      "DownstreamPathTemplate": "/api/TestOrder/{everything}",
+      "UpstreamPathTemplate": "/testorder/test-order/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "testorderms",
+          "Port": 5020
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/TestResult/{everything}",
+      "UpstreamPathTemplate": "/testorder/test-result/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "testorderms",
+          "Port": 5020
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Comment/{everything}",
+      "UpstreamPathTemplate": "/testorder/comment/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "testorderms",
+          "Port": 5020
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/File/{everything}",
+      "UpstreamPathTemplate": "/testorder/file/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "testorderms",
+          "Port": 5020
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Auditlog/{everything}",
+      "UpstreamPathTemplate": "/testorder/audit-log/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "testorderms",
+          "Port": 5020
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/TestParameter/{everything}",
+      "UpstreamPathTemplate": "/testorder/test-parameter/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "testorderms",
+          "Port": 5020
+        }
+      ]
+    },
+
+    {
+      "DownstreamPathTemplate": "/api/InstrumentUsages/{everything}",
+      "UpstreamPathTemplate": "/instrument/instrument-usages/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "instrumentms",
+          "Port": 5030
+        }
+      ]
+    },
+
+    {
+      "DownstreamPathTemplate": "/api/Configuration/{everything}",
+      "UpstreamPathTemplate": "/warehouse/configuration/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Instrument/{everything}",
+      "UpstreamPathTemplate": "/warehouse/instrument/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/OrderSupplyHistory/{everything}",
+      "UpstreamPathTemplate": "/warehouse/order-supply-history/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Parameter/{everything}",
+      "UpstreamPathTemplate": "/warehouse/parameter/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Reagent/{everything}",
+      "UpstreamPathTemplate": "/warehouse/reagent/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/ReagentUsageHistory/{everything}",
+      "UpstreamPathTemplate": "/warehouse/reagent-usage-history/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Sample/{everything}",
+      "UpstreamPathTemplate": "/warehouse/sample/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Vendor/{everything}",
+      "UpstreamPathTemplate": "/warehouse/vendor/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "warehousems",
+          "Port": 5000
+        }
+      ]
+    }
+  ]
+}
