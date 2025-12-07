@@ -1,4 +1,5 @@
 ﻿using Application.Enum;
+using Application.Helper;
 using Domain.Aggregate;
 using Domain.Entity;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,9 @@ namespace Infrastructure.Persistence.Seed
             // Flag
             if (await context.Roles.AnyAsync(r => r.Code == RoleKey.ADMIN))
             {
-                Console.WriteLine("DATABASE HAS BEEN SEEDED ALREADY");
+                ServiceLogger.Warning(
+                    Level.Infrastructure, 
+                    "Database already seeded, seeding action has been terminated");
                 return;
             }
 
@@ -23,10 +26,7 @@ namespace Infrastructure.Persistence.Seed
             {
                 new Role(Guid.NewGuid(), "Super Administrator", RoleKey.SUPER_ADMIN, "Full access to all system features."),
                 new Role(Guid.NewGuid(), "Administrator", RoleKey.ADMIN, "Full access to all system features but has some limitation compare to Super Administrator."),
-                new Role(Guid.NewGuid(), "Lab Manager", RoleKey.LAB_MANAGER, "Manages laboratory operations and system configurations."),
-                new Role(Guid.NewGuid(), "Service", RoleKey.SERVICE, "Performs system maintenance, operations, and monitoring tasks."),
-                new Role(Guid.NewGuid(), "Lab User", RoleKey.LAB_USER, "Conducts lab tests, analyzes samples, and manages lab processes."),
-                new Role(Guid.NewGuid(), "Normal User", RoleKey.NORMAL_USER, "Patient who can view their test results."),
+                new Role(Guid.NewGuid(), "Normal User", RoleKey.NORMAL_USER, "Player who can access to the system to play some game."),
             };
 
             foreach (var role in rolesToSeed)
@@ -39,45 +39,7 @@ namespace Infrastructure.Persistence.Seed
             // -----------------------------
             var privilegeList = new (string Name, string Description)[]
             {
-                // Test order service
-                // Test Order Controller
-                ("ViewTestOrder", "Have right to view test order."),
-                ("CreateTestOrder", "Have right to create a new patient test order."),
-                ("DeleteTestOrder", "Have right to delete an existing test order."),
-                ("ReadOnly", "Only have right to view patient test orders and results."),
-                // Test Parameter Controller
-                // (Anonymous)
-                // Comment + Test Result Controller
-                ("ModifyTestOrder", "Have right to modify patient test order information."),
-                // File Controller
-                ("GetFile", "Have right to get file from cloud."),
-                ("UploadFile", "Have right to upload file from cloud."),
-                ("DeleteFile", "Have right to delete file from cloud."),
-                // Audit Log Controller
-                ("ReadAuditLog", "Have right to view audit logs in the system."),
-
-                // Warehouse service (SERVICE, LAB_MANAGER, LAB_USER)
-                // Configuration Controller
-                ("ViewConfiguration", "Have right to view system configurations."),
-                ("ModifyConfiguration", "Have right to modify configurations."),
-                ("CreateConfiguration", "Have right to create a new configuration."),
-                ("DeleteConfiguration", "Have right to delete configurations."),
-                // Instrument Controller
-                ("ViewInstrument", "Have right to view all instruments."),
-                ("AddInstrument", "Have right to add new instruments."),
-                ("CheckInstrumentStatus", "Have right to check instrument status."),
-                ("ActivateDeactivateInstrument", "Have right to activate or deactivate instruments."),
-                // Order Supply History Controller
-                ("ViewOrderSupplyHistory", "Have right to view order instrument supplyment."),
-                ("CreateOrderSupplyHistory", "Have right to create new order instrument supplyment."),
-                ("ModifyOrderSupplyHistory", "Have right to update existed order instrument supplyment."),
-                // Parameter Controller
-                ("ViewParameter", "Have right to view existed instrument parameter."),
-                ("ModifyParameter", "Have right to update existed instrument parameter."),
-                // Reagent Controller
-                ("ViewReagent", "Have right to view reagents."),
-                // Reagent Usage History Controller
-                ("ViewReagentUsageHistory", "Have right to view reagent usage history."),
+                ("ReadOnly", "Have right to view read only fields."),
 
                 // IAM service
                 // User Controller
@@ -96,18 +58,6 @@ namespace Infrastructure.Persistence.Seed
                 ("CreatePrivilege", "Have right to create new privileges."),
                 ("UpdatePrivilege", "Have right to update existing privileges."),
                 ("DeletePrivilege", "Have right to delete privileges."),
-
-                // Instrument service
-                ("CreateBarcode", "Have right to create new barcode."),
-                ("UpdateInstrumentMode", "Have right to update instrument to ready or set QC confirmation."),
-
-
-                // Patient service
-                // Patient Controller + Medical Record Controller
-                ("ViewPatient", "Have right to view patient."),
-                ("CreatePatient", "Have right to create patient."),
-                ("UpdatePatient", "Have right to update patient."),
-                ("DeletePatient", "Have right to delete patient.")
             };
 
             foreach (var (name, desc) in privilegeList)
@@ -119,7 +69,7 @@ namespace Infrastructure.Persistence.Seed
             await context.SaveChangesAsync();
 
             // -----------------------------
-            // 3️ Seed Role-Privilege mappings (IAM only)
+            // 3️ Seed Role-Privilege mappings
             // -----------------------------
             var rolesFromDb = await context.Roles.ToListAsync();
             var privilegesFromDb = await context.Privileges.ToListAsync();
@@ -150,78 +100,32 @@ namespace Infrastructure.Persistence.Seed
                 .ToArray();
             AddPrivilegesToRole(RoleKey.ADMIN, adminPrivileges);
 
-            // LAB_MANAGER
-            AddPrivilegesToRole(RoleKey.LAB_MANAGER,
-                "ViewUser", "CreateUser", "ModifyUser", "DeleteUser",
-                "ViewRole", "ViewPrivilege", "ChangePassword",
-                "ViewInstrument", "ActivateDeactivateInstrument",
-                "ViewOrderSupplyHistory", "CreateOrderSupplyHistory", "ModifyOrderSupplyHistory",
-                "ViewReagentUsageHistory"
-            );
-
-            // SERVICE
-            AddPrivilegesToRole(RoleKey.SERVICE,
-                "ChangePassword",
-                "ViewConfiguration", "CreateConfiguration", "ModifyConfiguration", "DeleteConfiguration",
-                "ViewInstrument", "AddInstrument", "CheckInstrumentStatus", "ActivateDeactivateInstrument",
-                "ViewOrderSupplyHistory", "CreateOrderSupplyHistory", "ModifyOrderSupplyHistory",
-                "ViewParameter", "ModifyParameter", "ViewReagent",
-                "ViewReagentUsageHistory"
-            );
-
-            // LAB_USER
-            AddPrivilegesToRole(RoleKey.LAB_USER,
-                "ChangePassword",
-
-                // Warehouse
-                "ViewConfiguration", "CreateConfiguration", "ModifyConfiguration", "DeleteConfiguration",
-                "ViewInstrument", "CheckInstrumentStatus", "ActivateDeactivateInstrument",
-                "ViewOrderSupplyHistory", "CreateOrderSupplyHistory", "ModifyOrderSupplyHistory",
-                "ViewReagentUsageHistory",
-
-                // Patient
-                "ViewPatient", "CreatePatient", "UpdatePatient", "DeletePatient",
-
-                // Instrument
-                "UpdateInstrumentMode", "CreateBarcode",
-
-                // Test Order
-                "ModifyTestOrder",
-                "GetFile", "UploadFile", "DeleteFile",
-                "ViewTestOrder", "CreateTestOrder", "DeleteTestOrder",
-                "ReadOnly"
-            );
-
             // NORMAL_USER
             AddPrivilegesToRole(RoleKey.NORMAL_USER,
                 "ChangePassword",
-                "ReadOnly",
-                "ViewPatient",
-                "ViewTestOrder"
+                "ReadOnly"
             );
 
             await context.RolePrivileges.AddRangeAsync(rolePrivilegesToInsert);
             await context.SaveChangesAsync();
 
             // -----------------------------
-            // 4️ Seed Default Super Admin User (constructor)
+            // 4️ Seed Default Super Admin User
             // -----------------------------
             var adminEmail = "longdong32120@gmail.com";
             if (!await context.Users.AnyAsync(u => u.Email == adminEmail))
             {
                 var adminRole = rolesFromDb.First(r => r.Code == RoleKey.SUPER_ADMIN);
 
+                var id = Guid.NewGuid();
                 var adminUser = new User(
-                    userID: Guid.NewGuid(),
+                    userID: id,
                     email: adminEmail,
                     fullName: "Dong Xuan Bao Long",
                     dob: new DateTime(2005, 1, 28),
-                    address: "Hiep Phuoc, Nhon Trach, Dong Nai",
                     gender: "Male",
-                    phone: "+84349331141",
                     password: "28012005",
-                    identityNumber: "077205011495",
-                    createdBy: "077205011495",
+                    createdBy: id,
                     isActive: true
                 );
 

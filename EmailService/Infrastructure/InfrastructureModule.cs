@@ -56,7 +56,7 @@ namespace Infrastructure
                 {
                     // Add all consumers for this service
                     x.AddConsumer<EmailConsumer>();
-                    x.AddConsumer<IdentityNumberConsumer>();
+                    x.AddConsumer<UserIDConsumer>();
 
                     x.UsingRabbitMq((context, cfg) =>
                     {
@@ -86,7 +86,7 @@ namespace Infrastructure
 
                         cfg.ReceiveEndpoint("identity_consumer_queue", e =>
                         {
-                            e.ConfigureConsumer<IdentityNumberConsumer>(context);
+                            e.ConfigureConsumer<UserIDConsumer>(context);
                         });
                     });
                 });

@@ -1,8 +1,9 @@
 ﻿using API.APIException;
 using API.Models;
 using Application.ApplicationException;
+using Application.Helper;
 using Domain.DomainException;
-using FSA.LaboratoryManagement.Authorization;
+using PlainWorld.Authorization;
 using System.Text.Json;
 
 namespace API.Middleware
@@ -10,13 +11,11 @@ namespace API.Middleware
     public class GlobalExceptionMiddleware
     {
         private readonly RequestDelegate _requestDelegate;
-        private readonly ILogger<GlobalExceptionMiddleware> _logger;
 
         public GlobalExceptionMiddleware(
-            RequestDelegate requestDelegate, ILogger<GlobalExceptionMiddleware> logger)
+            RequestDelegate requestDelegate)
         {
             _requestDelegate = requestDelegate;
-            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -39,45 +38,63 @@ namespace API.Middleware
             switch (exception)
             {
                 // Domain Layer Exceptions - 400 Bad Request
-                case InvalidUserAggregateException or
+                case 
+                InvalidUserAggregateException or
                 InvalidRoleAggregateException or
-                InvalidPasswordOVException or InvalidChangePassword:
-                    _logger.LogWarning(exception, "Bad request: {ExceptionType}", exception.GetType().Name);
+                InvalidPasswordOVException or 
+                InvalidChangePassword:
+                    ServiceLogger.Warning(
+                        Level.API, $"Bad request: {exception.GetType().Name}, detail: {exception.Message}");
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
                     response.Type = "Bad Request";
                     response.Message = exception.Message;
                     break;
 
                 // Domain Layer Exceptions - 400 Bad Request
-                case DomainExceptionBase domainEx:
-                    _logger.LogWarning(domainEx, "Domain validation error occurred");
+                case DomainExceptionBase:
+                    ServiceLogger.Warning(
+                        Level.API, "Domain validation error occurred");
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
                     response.Type = "Domain Error";
-                    response.Message = domainEx.Message;
+                    response.Message = exception.Message;
                     break;
 
                 // Not Found Exceptions - 404 Not Found
-                case UserNotFound or UserEmailNotFound or RoleCodeNotFound 
-                    or RoleGuidNotFound or PrivilegeNotFound:
-                    _logger.LogWarning(exception, "Resource not found: {ExceptionType}", exception.GetType().Name);
+                case 
+                UserNotFound or 
+                UserEmailNotFound or 
+                RoleNotFound or 
+                PrivilegeNotFound:
+                    ServiceLogger.Warning(
+                        Level.API, $"Resource not found: {exception.GetType().Name}, detail: {exception.Message}");
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
                     response.Type = "Not Found";
                     response.Message = exception.Message;
                     break;
 
                 // Conflict Exceptions - 409 Conflict
-                case UserAlreadyExists or RoleCodeAlreadyExists or PrivilegeAlreadyExists:
-                    _logger.LogWarning(exception, "Resource conflict: {ExceptionType}", exception.GetType().Name);
+                case 
+                UserAlreadyExists or 
+                RoleCodeAlreadyExists or 
+                PrivilegeAlreadyExists:
+                    ServiceLogger.Warning(
+                        Level.API, $"Resource conflict: {exception.GetType().Name}, detail: {exception.Message}");
                     context.Response.StatusCode = StatusCodes.Status409Conflict;
                     response.Type = "Conflict";
                     response.Message = exception.Message;
                     break;
 
                 // Authentication/Authorization Exceptions - 401 Unauthorized
-                case InvalidTokenException or InvalidResetPassword 
-                or InvalidRole or InvalidPassword or AuthorizationFailedException
-                or ClaimNotFound or InvalidOwner:
-                    _logger.LogWarning(exception, "Authentication/Authorization error");
+                case 
+                InvalidTokenException or 
+                InvalidResetPassword or 
+                InvalidRole or 
+                InvalidPassword or 
+                AuthorizationFailedException or 
+                ClaimNotFound or 
+                InvalidOwner:
+                    ServiceLogger.Warning(
+                        Level.API, "Authentication/Authorization error");
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     response.Type = "Unauthorized";
                     response.Message = exception.Message;
@@ -85,7 +102,8 @@ namespace API.Middleware
 
                 // Application Layer Exceptions - 500 Internal Server Error
                 case ApplicationExceptionBase:
-                    _logger.LogWarning(exception, "Application error: {ExceptionType}", exception.GetType().Name);
+                    ServiceLogger.Warning(
+                        Level.API, $"Application error: {exception.GetType().Name}, detail: {exception.Message}");
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     response.Type = "Application Error";
                     response.Message = exception.Message;
@@ -93,7 +111,8 @@ namespace API.Middleware
 
                 // Default Exception - 500 Internal Server Error
                 default:
-                    _logger.LogError(exception, "An unexpected error occurred");
+                    ServiceLogger.Error(
+                        Level.API, exception.Message);
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     response.Type = "Internal Server Error";
                     response.Message = "An internal error occurred. Please try again later.";

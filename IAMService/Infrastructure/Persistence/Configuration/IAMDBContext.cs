@@ -30,10 +30,7 @@ public class IAMDBContext : DbContext
             entity.Property(u => u.Email).IsRequired();
             entity.Property(u => u.FullName).IsRequired();
             entity.Property(u => u.Dob).IsRequired();
-            entity.Property(u => u.Address).IsRequired();
             entity.Property(u => u.Gender).IsRequired();
-            entity.Property(u => u.Phone).IsRequired();
-            entity.Property(u => u.IdentityNumber).IsRequired();
             entity.Property(u => u.Password)
                   .HasConversion(
                       v => v.Hashed,
@@ -42,8 +39,6 @@ public class IAMDBContext : DbContext
                   .IsRequired();
             entity.Property(u => u.IsActive).HasDefaultValue(true);
             entity.Property(u => u.CreatedBy).IsRequired();
-
-            entity.HasIndex(u => u.IdentityNumber);
 
             entity.HasMany(u => u.UserRoles)
                   .WithOne()

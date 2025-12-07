@@ -18,13 +18,10 @@ namespace Domain.Aggregate
         public string Email { get; private set; }
         public string FullName { get; private set; }
         public DateTime Dob { get; private set; }
-        public string Address { get; private set; }
         public string Gender { get; private set; }
-        public string Phone { get; private set; }
         public Password Password { get; private set; }
-        public string IdentityNumber { get; private set; }
         public bool IsActive { get; private set; }
-        public string CreatedBy { get; private set; }
+        public Guid CreatedBy { get; private set; }
 
         public RefreshToken? RefreshToken { get; private set; }
         public int Age
@@ -48,38 +45,61 @@ namespace Domain.Aggregate
             string email,
             string fullName,
             DateTime dob,
-            string address,
             string gender,
-            string phone,
             string password, 
-            string identityNumber,
-            string createdBy,
+            Guid createdBy,
             bool isActive = true)
         {
             ValidateUserID(userID);
             ValidateEmail(email);
             ValidateFullName(fullName);
             ValidateDob(dob);
-            ValidateAddress(address);
             ValidateGender(gender);
-            ValidatePhone(phone);
             Password = Password.FromPlain(password);
-            ValidateIdentityNumber(identityNumber);
             ValidateCreatedBy(createdBy);
 
             UserID = userID;
             Email = email;
             FullName = fullName;
             Dob = dob;
-            Address = address;
             Gender = gender;
-            Phone = phone;
-            IdentityNumber = identityNumber;
             IsActive = isActive;
             CreatedBy = createdBy;
         }
 
         #region Methods
+        public List<Privilege> GetEffectivePrivileges(Guid roleId)
+        {
+            // Collect all privileges from active roles
+            var privileges = new HashSet<Privilege>(
+                userRoles
+                    .Where(ur => ur.IsActive && ur.Role != null && ur.RoleID == roleId)
+                    .SelectMany(ur => ur.Role.RolePrivileges)
+                    .Where(rp => rp.IsActive && rp.Privilege != null)
+                    .Select(rp => rp.Privilege)
+            );
+
+            // Apply user-specific privilege overrides
+            foreach (var up in userPrivileges)
+            {
+                if (up.Privilege == null)
+                    continue;
+
+                if (up.IsGranted)
+                {
+                    // Add explicitly granted privilege
+                    privileges.Add(up.Privilege);
+                }
+                else
+                {
+                    // Remove explicitly revoked privilege
+                    privileges.RemoveWhere(p => p.PrivilegeID == up.PrivilegeID);
+                }
+            }
+
+            return privileges.ToList();
+        }
+
         public void UpdateEmail(string email)
         {
             ValidateEmail(email);
@@ -98,22 +118,10 @@ namespace Domain.Aggregate
             Dob = dob;
         }
 
-        public void UpdateAddress(string address)
-        {
-            ValidateAddress(address);
-            Address = address;
-        }
-
         public void UpdateGender(string gender)
         {
             ValidateGender(gender);
             Gender = gender;
-        }
-
-        public void UpdatePhone(string phone)
-        {
-            ValidatePhone(phone);
-            Phone = phone;
         }
 
         public void ChangePassword(string newPassword)
@@ -178,14 +186,14 @@ namespace Domain.Aggregate
         #endregion
 
         #region Private Validators
-        private static void ValidateUserID(Guid id)
+        private void ValidateUserID(Guid id)
         {
             if (id == Guid.Empty) 
                 throw new InvalidUserAggregateException(
                     "UserID cannot be empty.");
         }
 
-        private static void ValidateEmail(string email)
+        private void ValidateEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
                 throw new InvalidUserAggregateException(
@@ -196,96 +204,36 @@ namespace Domain.Aggregate
                     "Email has invalid format.");
         }
 
-        private static void ValidateFullName(string fullName)
+        private void ValidateFullName(string fullName)
         {
             if (string.IsNullOrWhiteSpace(fullName))
                 throw new InvalidUserAggregateException(
                     "Full name cannot be empty.");
         }
 
-        private static void ValidateDob(DateTime dob)
+        private void ValidateDob(DateTime dob)
         {
             if (dob > DateTime.Today)
                 throw new InvalidUserAggregateException(
                     "Date of birth cannot be in the future.");
         }
 
-        private static void ValidateAddress(string address)
-        {
-            if (string.IsNullOrWhiteSpace(address))
-                throw new InvalidUserAggregateException(
-                    "Address cannot be empty.");
-        }
-
-        private static void ValidateGender(string gender)
+        private void ValidateGender(string gender)
         {
             if (gender != GenderEnum.MALE && gender != GenderEnum.FEMALE)
                 throw new InvalidUserAggregateException(
                     "Gender must be male or female.");
         }
 
-        private static void ValidatePhone(string phone)
+        private void ValidateCreatedBy(Guid createdBy)
         {
-            if (string.IsNullOrWhiteSpace(phone))
+            if (createdBy == Guid.Empty)
                 throw new InvalidUserAggregateException(
-                    "Phone number cannot be empty.");
-
-            if (!Regex.IsMatch(phone, @"^(0|\+84)\d{9}$"))
-                throw new InvalidUserAggregateException(
-                    "Phone number must contain exactly 10 digits.");
-        }
-
-        private static void ValidateIdentityNumber(string identityNumber)
-        {
-            if (string.IsNullOrWhiteSpace(identityNumber))
-                throw new InvalidUserAggregateException(
-                    "Identity number cannot be empty.");
-            if (!Regex.IsMatch(identityNumber, @"^\d{12}$"))
-                    throw new InvalidUserAggregateException(
-                        "Identity number must contain exactly 12 digits.");
-        }
-
-        private static void ValidateCreatedBy(string createdBy)
-        {
-            if (string.IsNullOrWhiteSpace(createdBy))
-                throw new InvalidUserAggregateException(
-                    "Identity number of user who made the creation cannot be empty.");
+                    "User ID of user who made the creation cannot be empty.");
         }
         #endregion
 
         #region Private Helpers
-        public List<Privilege> GetEffectivePrivileges(Guid roleId)
-        {
-            // Collect all privileges from active roles
-            var privileges = new HashSet<Privilege>(
-                userRoles
-                    .Where(ur => ur.IsActive && ur.Role != null && ur.RoleID == roleId)
-                    .SelectMany(ur => ur.Role.RolePrivileges)
-                    .Where(rp => rp.IsActive && rp.Privilege != null)
-                    .Select(rp => rp.Privilege)
-            );
-
-            // Apply user-specific privilege overrides
-            foreach (var up in userPrivileges)
-            {
-                if (up.Privilege == null)
-                    continue;
-
-                if (up.IsGranted)
-                {
-                    // Add explicitly granted privilege
-                    privileges.Add(up.Privilege);
-                }
-                else
-                {
-                    // Remove explicitly revoked privilege
-                    privileges.RemoveWhere(p => p.PrivilegeID == up.PrivilegeID);
-                }
-            }
-
-            return privileges.ToList();
-        }
-
         private int CalculateAge(DateTime dob)
         {
             var today = DateTime.Today;

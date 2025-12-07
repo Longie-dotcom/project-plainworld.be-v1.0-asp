@@ -21,6 +21,17 @@ namespace Infrastructure.Persistence.Repository
         }
 
         #region Methods
+        public async Task<string?> GetByTokenAsync(string token)
+        {
+            var refreshToken = await context.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.Token == token && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
+
+            if (refreshToken == null) return null;
+
+            return refreshToken.Token;
+        }
+
         public async Task<string> AddTokenAsync(Guid userId)
         {
             var user = await context.Users
@@ -64,30 +75,9 @@ namespace Infrastructure.Persistence.Repository
                 await context.SaveChangesAsync();
             }
         }
+        #endregion
 
-        public async Task RevokeTokenAsync(Guid userId)
-        {
-            var existingToken = await context.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.UserID == userId);
-
-            if (existingToken != null)
-            {
-                existingToken.Revoke();
-                await context.SaveChangesAsync();
-            }
-        }
-
-        public async Task<string?> GetByTokenAsync(string token)
-        {
-            var refreshToken = await context.RefreshTokens
-                .Include(rt => rt.User)
-                .FirstOrDefaultAsync(rt => rt.Token == token && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
-
-            if (refreshToken == null) return null;
-
-            return refreshToken.Token;
-        }
-
+        #region Private Helpers
         private string GenerateRefreshToken(int size = 32)
         {
             var randomNumber = new byte[size];

@@ -1,9 +1,10 @@
-﻿using Application.DTO;
+﻿using API.Helper;
+using Application.DTO;
 using Application.Interface.IService;
-using FSA.LaboratoryManagement.Authorization;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using PlainWorld.Authorization;
+using System.Security.Claims;
 
 namespace API.Controllers
 {
@@ -47,7 +48,10 @@ namespace API.Controllers
         public async Task<ActionResult> CreateRole(
             [FromBody] RoleCreateDTO dto)
         {
-            var role = await roleService.CreateRoleAsync(dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await roleService.CreateRoleAsync(
+                dto,
+                claims.userId);
             return Ok("Role created successfully");
         }
 
@@ -56,16 +60,23 @@ namespace API.Controllers
         public async Task<ActionResult> UpdateRole(
             Guid roleId, [FromBody] RoleUpdateDTO dto)
         {
-            var updated = await roleService.UpdateRoleAsync(roleId, dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await roleService.UpdateRoleAsync(
+                roleId, 
+                dto,
+                claims.userId);
             return Ok("Role updated successfully");
         }
 
         [AuthorizePrivilege("DeleteRole")]
         [HttpDelete("{roleId:guid}")]
         public async Task<IActionResult> DeleteRole(
-            Guid roleId, [FromBody] UserDeleteDTO dto)
+            Guid roleId)
         {
-            await roleService.DeleteRoleAsync(roleId, dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await roleService.DeleteRoleAsync(
+                roleId, 
+                claims.userId);
             return Ok("Role deleted successfully");
         }
         #endregion

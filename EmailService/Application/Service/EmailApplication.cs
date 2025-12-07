@@ -1,7 +1,5 @@
 ﻿using Application.Interface;
-using AutoMapper;
-using FSA.LaboratoryManagement.EmailMessage;
-using System.Net.Mail;
+using PlainWorld.MessageBroker;
 
 namespace Application.Service
 {
@@ -39,12 +37,12 @@ namespace Application.Service
             await emailService.SendEmailAsync(message);
         }
 
-        public async Task PublishEmailByIdentityNumber(IdentityNumberMessageDTO message)
+        public async Task PublishEmailByIdentityNumber(UserIDMessageDTO message)
         {
-            var userEmail = await iAMClient.GetUserEmail(message.ToIdentityNumber);
+            var userEmail = await iAMClient.GetUserEmail(message.ToUserID);
             if (userEmail == null)
             {
-                Console.WriteLine($"Identity number of user: {message.ToIdentityNumber} was ignored");
+                Console.WriteLine($"User ID of user: {message.ToUserID} was ignored");
                 return;
             }
 

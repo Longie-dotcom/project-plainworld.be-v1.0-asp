@@ -3,8 +3,8 @@ using Application.DTO;
 using Application.Interface.IService;
 using AutoMapper;
 using Domain.Aggregate;
-using Domain.Entity;
 using Domain.IRepository;
+using System.Data;
 
 namespace Infrastructure.Service
 {
@@ -20,42 +20,38 @@ namespace Infrastructure.Service
         }
 
         #region Methods
-        public async Task<RoleDetailDTO> GetRoleByIdAsync(Guid roleId)
-        {
-            // Get role
-            var role = await unitOfWork
-                .GetRepository<IRoleRepository>()
-                .GetByDetailByIdAsync(roleId);
-            if (role == null)
-                throw new RoleGuidNotFound(roleId);
-
-            var dto = mapper.Map<RoleDetailDTO>(role);
-            dto.Privileges = role.RolePrivileges.Select(
-                p => mapper.Map<PrivilegeDTO>(p.Privilege)).ToList();
-
-            return dto;
-        }
-
         public async Task<IEnumerable<RoleDTO>> GetRoleListAsync()
         {
             var roles = await unitOfWork
                 .GetRepository<IRoleRepository>()
-                .GetRolesWithFilterAsync();
-            var list = new List<RoleDTO>();
-            foreach (var role in roles)
-            {
-                var roleDto = mapper.Map<RoleDTO>(role);
-                roleDto.PrivilegeID = role.RolePrivileges.Select( p => p.PrivilegeID ).ToList();
-                list.Add(roleDto);
-            }
+                .GetRolesAsync();
 
-            return list;
+            // Validate role existence
+            if (roles == null || !roles.Any())
+                throw new RoleNotFound(
+                    $"Role list is empty");
+
+            return mapper.Map<IEnumerable<RoleDTO>>(roles);
         }
 
-        public async Task<RoleDTO> CreateRoleAsync(RoleCreateDTO dto)
+        public async Task<RoleDetailDTO> GetRoleByIdAsync(Guid roleId)
         {
-            await unitOfWork.BeginTransactionAsync();
+            var role = await unitOfWork
+                .GetRepository<IRoleRepository>()
+                .GetByDetailByIdAsync(roleId);
 
+            // Validate role existence
+            if (role == null)
+                throw new RoleNotFound(
+                    $"Role with role ID: {roleId} is not found");
+
+            return mapper.Map<RoleDetailDTO>(role);
+        }
+
+        public async Task CreateRoleAsync(
+            RoleCreateDTO dto,
+            Guid createdBy)
+        {
             var existedRoles = await unitOfWork
                 .GetRepository<IRoleRepository>()
                 .GetAllAsync();
@@ -63,9 +59,10 @@ namespace Infrastructure.Service
             // Validate role code duplication
             var existedCode = existedRoles.Where(r => r.Code == dto.RoleCode);
             if (existedCode.Any())
-                throw new RoleCodeAlreadyExists(dto.RoleCode);
+                throw new RoleCodeAlreadyExists(
+                    $"Role with code '{dto.RoleCode}' already exists.");
             
-            // Create base role
+            // Apply domain
             var newRole = new Role
             (
                 Guid.NewGuid(),
@@ -80,60 +77,59 @@ namespace Infrastructure.Service
                 newRole.AddPrivilege(privilegeId);
             }
 
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
             unitOfWork
                 .GetRepository<IRoleRepository>()
-                .Add(newRole);
-           
-            await unitOfWork.CommitAsync(dto.PerformedBy);
-
-            var result = mapper.Map<RoleDTO>(newRole);
-            result.PrivilegeID = dto.PrivilegeID;
-
-            return result;
+                .Add(newRole);           
+            await unitOfWork.CommitAsync(createdBy.ToString());
         }
 
-        public async Task<RoleDTO> UpdateRoleAsync(Guid roleId, RoleUpdateDTO dto)
+        public async Task UpdateRoleAsync(
+            Guid roleId, 
+            RoleUpdateDTO dto,
+            Guid createdBy)
         {
-            await unitOfWork.BeginTransactionAsync();
+            var existing = await unitOfWork
+                .GetRepository<IRoleRepository>()
+                .GetByIdAsync(roleId);
 
-            var repo = unitOfWork.GetRepository<IRoleRepository>();
-            var existing = await repo.GetByIdAsync(roleId);
+            // Validate role existence
             if (existing == null)
-                throw new RoleGuidNotFound(roleId);
+                throw new RoleNotFound(
+                    $"Role with role ID: {roleId} is not found");
 
+            // Apply domain
             existing.UpdateName(dto.Name);
             existing.UpdateDescription(dto.Description);
 
-            // Update privileges (many to many)
-            await unitOfWork.GetRepository<IRoleRepository>()
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            await unitOfWork
+                .GetRepository<IRoleRepository>()
                 .UpdateRolePrivilegesAsync(roleId, dto.PrivilegeID);
-
-            await unitOfWork.CommitAsync(dto.PerformedBy);
-
-            var result = mapper.Map<RoleDTO>(existing);
-            result.PrivilegeID = existing.RolePrivileges
-                .Where(rp => rp.IsActive)
-                .Select(rp => rp.PrivilegeID)
-                .ToList();
-
-            return result;
+            await unitOfWork.CommitAsync(createdBy.ToString());
         }
 
-        public async Task DeleteRoleAsync(Guid roleId, UserDeleteDTO dto)
+        public async Task DeleteRoleAsync(
+            Guid roleId, 
+            Guid createdBy)
         {
-            await unitOfWork.BeginTransactionAsync();
-
             var role = await unitOfWork
                 .GetRepository<IRoleRepository>()
                 .GetByIdAsync(roleId);
-            if (role == null)
-                throw new RoleGuidNotFound(roleId);
 
+            // Validate role existence
+            if (role == null)
+                throw new RoleNotFound(
+                    $"Role with role ID: {roleId} is not found");
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
             unitOfWork
                 .GetRepository<IRoleRepository>()
                 .Remove(roleId);
-
-            await unitOfWork.CommitAsync(dto.PerformBy);
+            await unitOfWork.CommitAsync(createdBy.ToString());
         }
         #endregion
     }

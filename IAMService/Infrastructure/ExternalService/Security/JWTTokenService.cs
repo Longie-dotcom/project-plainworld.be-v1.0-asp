@@ -36,7 +36,7 @@ namespace Infrastructure.ExternalService.Security
         #region Methods
         public string GenerateToken(
             List<Privilege> privileges,
-            string identityNumber,
+            Guid userId,
             string email,
             string fullName,
             string roleCode)
@@ -46,7 +46,7 @@ namespace Infrastructure.ExternalService.Security
 
             var claims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.NameIdentifier, identityNumber),
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                     new Claim(ClaimTypes.Email, email),
                     new Claim("FullName", fullName),
                     new Claim(ClaimTypes.Role, roleCode),

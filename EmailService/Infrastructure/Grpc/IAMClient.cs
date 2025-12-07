@@ -1,6 +1,6 @@
 ﻿using Application.Interface;
 using Grpc.Net.Client;
-using IAMServer.EmailClient.gRPC;
+using IAMServer.gRPC;
 using Infrastructure.InfrastructureException;
 using Microsoft.Extensions.Configuration;
 
@@ -20,14 +20,14 @@ namespace Infrastructure.Grpc
             client = new IAMGrpc.IAMGrpcClient(channel);
         }
 
-        public async Task<string?> GetUserEmail(string identityNumber)
+        public async Task<string?> GetUserEmail(Guid userId)
         {
             try
             {
-                var user = await client.EmailServiceGetUserAsync(
-                    new EmailServiceGetUserRequest()
+                var user = await client.GetUserAsync(
+                    new GetUserRequest()
                     {
-                        IdentityNumber = identityNumber
+                        UserId = userId.ToString(),
                     });
 
                 if (user == null)

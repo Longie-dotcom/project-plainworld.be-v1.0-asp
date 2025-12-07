@@ -9,7 +9,8 @@ namespace Infrastructure.Persistence.Configuration
         {
             var optionsBuilder = new DbContextOptionsBuilder<IAMDBContext>();
 
-            optionsBuilder.UseSqlServer("Server=.;Database=IAMDB;Trusted_Connection=True;TrustServerCertificate=True");
+            optionsBuilder.UseSqlServer(
+                "Server=.;Database=IAMDB;Trusted_Connection=True;TrustServerCertificate=True");
 
             return new IAMDBContext(optionsBuilder.Options);
         }

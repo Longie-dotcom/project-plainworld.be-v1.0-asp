@@ -137,13 +137,8 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("Dob")
                         .HasColumnType("datetime2");
@@ -160,10 +155,6 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("IdentityNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -173,13 +164,7 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("UserID");
-
-                    b.HasIndex("IdentityNumber");
 
                     b.ToTable("Users");
                 });

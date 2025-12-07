@@ -19,7 +19,11 @@ namespace Domain.Entity
 
         protected RolePrivilege() { }
 
-        public RolePrivilege(Guid rolePrivilegeID, Guid roleId, Guid privilegeId, bool isActive)
+        public RolePrivilege(
+            Guid rolePrivilegeID, 
+            Guid roleId, 
+            Guid privilegeId, 
+            bool isActive)
         {
             RolePrivilegeID = rolePrivilegeID;
             RoleID = roleId;

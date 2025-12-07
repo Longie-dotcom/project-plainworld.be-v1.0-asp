@@ -15,7 +15,10 @@ namespace Domain.Aggregate
 
         protected Privilege() { }
 
-        public Privilege(Guid privilegeID, string name, string description)
+        public Privilege(
+            Guid privilegeID, 
+            string name, 
+            string description)
         {
             ValidatePrivilegeID(privilegeID);
             ValidateName(name);

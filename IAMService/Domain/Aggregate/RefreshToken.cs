@@ -18,7 +18,10 @@
 
         protected RefreshToken() { }
 
-        public RefreshToken(Guid userId, string token, DateTime expiresAt)
+        public RefreshToken(
+            Guid userId, 
+            string token,
+            DateTime expiresAt)
         {
             UserID = userId;
             Token = token;
@@ -28,10 +31,6 @@
         }
 
         #region Methods
-        public void Revoke()
-        {
-            IsRevoked = true;
-        }
         #endregion
     }
 }

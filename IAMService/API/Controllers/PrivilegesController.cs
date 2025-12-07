@@ -1,8 +1,9 @@
-﻿using Application.DTO;
+﻿using API.Helper;
+using Application.DTO;
 using Application.Interface.IService;
-using FSA.LaboratoryManagement.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PlainWorld.Authorization;
 
 namespace API.Controllers
 {
@@ -46,7 +47,10 @@ namespace API.Controllers
         public async Task<ActionResult> CreatePrivilege(
             [FromBody] PrivilegeCreateDTO dto)
         {
-            var Privilege = await privilegeService.CreatePrivilegeAsync(dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await privilegeService.CreatePrivilegeAsync(
+                dto,
+                claims.userId);
             return Ok("Privileges created successfully");
         }
 
@@ -55,16 +59,23 @@ namespace API.Controllers
         public async Task<ActionResult> UpdatePrivilege(
             Guid privilegeId, [FromBody] PrivilegeUpdateDTO dto)
         {
-            var updated = await privilegeService.UpdatePrivilegeAsync(privilegeId, dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await privilegeService.UpdatePrivilegeAsync(
+                privilegeId, 
+                dto,
+                claims.userId);
             return Ok("Privileges updated successfully");
         }
 
         [AuthorizePrivilege("DeletePrivilege")]
         [HttpDelete("{privilegeId:guid}")]
         public async Task<IActionResult> DeletePrivilege(
-            Guid privilegeId, [FromBody] UserDeleteDTO dto)
+            Guid privilegeId)
         {
-            await privilegeService.DeletePrivilegeAsync(privilegeId, dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await privilegeService.DeletePrivilegeAsync(
+                privilegeId, 
+                claims.userId);
             return Ok("Privilege deleted successfully");
         }
         #endregion

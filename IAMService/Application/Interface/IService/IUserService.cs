@@ -1,4 +1,5 @@
 ﻿using Application.DTO;
+using PlainWorld.MessageBroker;
 
 namespace Application.Interface.IService
 {
@@ -6,33 +7,35 @@ namespace Application.Interface.IService
     {
         Task<IEnumerable<UserDTO>> GetUsersAsync(
             string? sortBy, 
-            QueryUserDTO dto, 
-            string createdBy,
+            QueryUserDTO dto,
+            Guid createdBy,
             string role);
-        Task<UserDetailDTO?> GetUserByIdAsync(
-            Guid userId, 
-            string createdBy,
+        Task<UserDetailDTO> GetUserByIdAsync(
+            Guid userId,
+            Guid createdBy,
             string role);
 
-        Task<UserDTO> CreateUserAsync(
-            UserCreateDTO dto, 
-            string createdBy,
+        Task CreateUserAsync(
+            UserCreateDTO dto,
+            Guid createdBy,
             string role);
-        Task<UserDTO> UpdateUserAsync(
+        Task UpdateUserAsync(
             Guid userId, 
-            UserUpdateDTO dto, 
-            string createdBy,
+            UserUpdateDTO dto,
+            Guid createdBy,
             string role);
         Task DeleteUserAsync(
             Guid userId,
-            UserDeleteDTO dto, 
-            string createdBy,
+            Guid performedBy,
+            Guid createdBy,
             string role);
         Task ChangePasswordAsync(
-            string identityNumber,
+            Guid userId,
             ChangePasswordDTO dto);
 
-        Task PatientSyncUpdating(IAMConsumeUpdateDTO dto);
-        Task PatientSyncDeleting(IAMConsumeDeleteDTO dto);
+        Task UserSyncUpdating(
+            UserUpdateRequestDTO dto);
+        Task<UserDetailDTO?> GetUserByIdGrpcAsync(
+            Guid userId);
     }
 }

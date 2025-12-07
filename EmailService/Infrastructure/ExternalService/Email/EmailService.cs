@@ -1,5 +1,5 @@
 ﻿using Application.Interface;
-using FSA.LaboratoryManagement.EmailMessage;
+using PlainWorld.MessageBroker;
 using System.Net;
 using System.Net.Mail;
 

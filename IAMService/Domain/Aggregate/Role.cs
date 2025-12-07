@@ -79,28 +79,28 @@ namespace Domain.Aggregate
         #endregion
 
         #region Private Validators
-        private static void ValidateRoleID(Guid id)
+        private void ValidateRoleID(Guid id)
         {
             if (id == Guid.Empty)
                 throw new InvalidRoleAggregateException(
                     "RoleID cannot be empty.");
         }
 
-        private static void ValidateName(string name)
+        private void ValidateName(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new InvalidRoleAggregateException(
                     "Role name cannot be empty.");
         }
 
-        private static void ValidateCode(string code)
+        private void ValidateCode(string code)
         {
             if (string.IsNullOrWhiteSpace(code))
                 throw new InvalidRoleAggregateException(
                     "Role code cannot be empty.");
         }
 
-        private static void ValidateDescription(string description)
+        private void ValidateDescription(string description)
         {
             if (string.IsNullOrWhiteSpace(description))
                 throw new InvalidRoleAggregateException(

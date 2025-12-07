@@ -1,4 +1,5 @@
-﻿using Application.Interface.IGrpcClient;
+﻿using Application.Helper;
+using Application.Interface.IGrpcClient;
 using Application.Interface.IPublisher;
 using Application.Interface.IService;
 using Domain.IRepository;
@@ -11,7 +12,6 @@ using Infrastructure.Persistence.Repository;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Infrastructure
 {
@@ -24,41 +24,26 @@ namespace Infrastructure
         #endregion
 
         #region Methods
-        public static void InfrastructureLoggerBase(
-            ILogger? logger, string message, Exception? ex = null)
-        {
-            if (ex == null)
-                logger?.LogInformation($"[Infrastructure]: {message}");
-            else
-                logger?.LogError(ex, $"[Infrastructure]: Error - {message}");
-        }
-
         public static IServiceCollection AddInfrastructure(
-                this IServiceCollection services,
-                ILoggerFactory loggerFactory)
+                this IServiceCollection services)
         {
-            if (loggerFactory == null)
-                throw new Exception("No logger");
-
-            var logger = loggerFactory.CreateLogger("Infrastructure");
-
-            InfrastructureLoggerBase(logger,
-                "Starting Infrastructure configuration");
+            ServiceLogger.Warning(
+                Level.Infrastructure, "Starting Infrastructure configuration");
 
             // ======================
             // 1. Database
             // ======================
             try
             {
-                InfrastructureLoggerBase(
-                    logger, "Configuring SQL Server database connection");
+                ServiceLogger.Warning(
+                    Level.Infrastructure, "Configuring SQL Server database connection");
 
                 // Configure the database connection
                 var connectionString = Environment.GetEnvironmentVariable("IAM_DB_CONNECTION");
                 if (string.IsNullOrEmpty(connectionString))
                 {
-                    InfrastructureLoggerBase(
-                        logger, "Missing environment variable: IAM_DB_CONNECTION");
+                    ServiceLogger.Error(
+                        Level.Infrastructure, "Missing environment variable: IAM_DB_CONNECTION");
                     throw new DatabaseConnectionException(
                         "Failed to configure IAM database.");
                 }
@@ -76,13 +61,13 @@ namespace Infrastructure
 
                 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-                InfrastructureLoggerBase(
-                    logger, "Database and repositories configured successfully.");
+                ServiceLogger.Logging(
+                    Level.Infrastructure, "Database and repositories configured successfully.");
             }
             catch (Exception ex)
             {
-                InfrastructureLoggerBase(
-                    logger, "Failed to configure IAM database.", ex);
+                ServiceLogger.Error(
+                    Level.Infrastructure, $"Failed to configure IAM database: {ex.Message}");
                 throw new DatabaseConnectionException(
                     "Failed to configure IAM database.");
             }
@@ -92,14 +77,13 @@ namespace Infrastructure
              //======================
             try
             {
-                InfrastructureLoggerBase(
-                    logger, "Configuring RabbitMQ connection");
+                ServiceLogger.Warning(
+                    Level.Infrastructure, "Configuring RabbitMQ connection");
 
                 services.AddMassTransit(x =>
                 {
                     // Add all consumers for this service
-                    x.AddConsumer<IAMUpdateConsumer>();
-                    x.AddConsumer<IAMDeleteConsumer>();
+                    x.AddConsumer<UserUpdateConsumer>();
 
                     x.UsingRabbitMq((context, cfg) =>
                     {
@@ -112,7 +96,8 @@ namespace Infrastructure
                         || string.IsNullOrEmpty(rabbitUser) 
                         || string.IsNullOrEmpty(rabbitPassword))
                         {
-                            InfrastructureLoggerBase(logger, "Missing RabbitMQ environment variables");
+                            ServiceLogger.Error(
+                                Level.Infrastructure, "Missing RabbitMQ environment variables");
                             throw new MessagingConnectionException("Failed to configure message broker.");
                         }
 
@@ -122,31 +107,25 @@ namespace Infrastructure
                             h.Password(rabbitPassword);
                         });
 
-                        // Bind IAM consumers to their respective queues
-                        cfg.ReceiveEndpoint("iam_update_consumer_queue", e =>
+                        cfg.ReceiveEndpoint("iam_consumer", e =>
                         {
-                            e.ConfigureConsumer<IAMUpdateConsumer>(context);
-                        });
-
-                        cfg.ReceiveEndpoint("iam_delete_consumer_queue", e =>
-                        {
-                            e.ConfigureConsumer<IAMDeleteConsumer>(context);
+                            e.ConfigureConsumer<UserUpdateConsumer>(context);
                         });
                     });
                 });
 
-                services.AddScoped<IIAMUpdatePublisher, IAMUpdatePublisher>();
-                services.AddScoped<IIAMDeletePublisher, IAMDeletePublisher>();
+                services.AddScoped<IUserUpdatePublisher, UserUpdatePublisher>();
+                services.AddScoped<IUserDeletePublisher, UserDeletePublisher>();
                 services.AddScoped<IEmailSendPublisher, EmailSendPublisher>();
                 services.AddScoped<ISignalRPublisher, SignalRPublisher>();
 
-                InfrastructureLoggerBase(
-                    logger, "RabbitMQ successfully configured.");
+                ServiceLogger.Logging(
+                    Level.Infrastructure, "RabbitMQ successfully configured.");
             }
             catch (Exception ex)
             {
-                InfrastructureLoggerBase(
-                    logger, "RabbitMQ configuration failed.", ex);
+                ServiceLogger.Error(
+                    Level.Infrastructure, $"RabbitMQ configuration failed: {ex.Message}");
                 throw new MessagingConnectionException(
                     "Failed to configure RabbitMQ infrastructure.");
             }
@@ -156,18 +135,18 @@ namespace Infrastructure
              //======================
             try
             {
-                InfrastructureLoggerBase(
-                    logger, "Configuring gRPC connection.");
+                ServiceLogger.Warning(
+                    Level.Infrastructure, $"Configuring gRPC connection.");
 
                 services.AddScoped<IGrpcClient, GrpcClient>();
 
-                InfrastructureLoggerBase(
-                logger, "gRPC configured successfully.");
+                ServiceLogger.Logging(
+                    Level.Infrastructure, "gRPC configured successfully.");
             }
             catch (Exception ex)
             {
-                InfrastructureLoggerBase(
-                    logger, "gRPC configuration failed.", ex);
+                ServiceLogger.Error(
+                    Level.Infrastructure, $"gRPC configuration failed: {ex.Message}");
                 throw new GrpcCommunicationException(
                     "Failed to configure gRPC client.");
             }
@@ -177,8 +156,8 @@ namespace Infrastructure
              //======================
             try
             {
-                InfrastructureLoggerBase(
-                    logger, "Configuring JWT token");
+                ServiceLogger.Warning(
+                    Level.Infrastructure, "Configuring JWT token");
 
                 var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
                 var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
@@ -187,29 +166,29 @@ namespace Infrastructure
 
                 if (string.IsNullOrEmpty(secretKey))
                 {
-                    InfrastructureLoggerBase(
-                        logger, "Missing environment variable: JWT_SECRET_KEY");
+                    ServiceLogger.Error(
+                        Level.Infrastructure, "Missing environment variable: JWT_SECRET_KEY");
                     throw new InvalidJWTTokenException(
                         "Failed to configure JWT token service.");
                 }
                 if (string.IsNullOrEmpty(issuer))
                 {
-                    InfrastructureLoggerBase(
-                        logger, "Missing environment variable: JWT_ISSUER");
+                    ServiceLogger.Error(
+                        Level.Infrastructure, "Missing environment variable: JWT_ISSUER");
                     throw new InvalidJWTTokenException(
                         "Failed to configure JWT token service.");
                 }
                 if (string.IsNullOrEmpty(audience))
                 {
-                    InfrastructureLoggerBase(
-                        logger, "Missing environment variable: JWT_AUDIENCE");
+                    ServiceLogger.Error(
+                        Level.Infrastructure, "Missing environment variable: JWT_AUDIENCE");
                     throw new InvalidJWTTokenException(
                         "Failed to configure JWT token service.");
                 }
                 if (string.IsNullOrEmpty(expiryStr))
                 {
-                    InfrastructureLoggerBase(
-                        logger, "Missing environment variable: JWT_EXPIRY_MINUTES");
+                    ServiceLogger.Error(
+                        Level.Infrastructure, "Missing environment variable: JWT_EXPIRY_MINUTES");
                     throw new InvalidJWTTokenException(
                         "Failed to configure JWT token service.");
                 }
@@ -219,13 +198,13 @@ namespace Infrastructure
                 services.AddSingleton<ITokenService>(sp =>
                     new JWTTokenService(secretKey, issuer, audience, expiryMinutes));
 
-                InfrastructureLoggerBase(
-                    logger, "JWT token successfully configured.");
+                ServiceLogger.Logging(
+                    Level.Infrastructure, "JWT token successfully configured.");
             }
             catch (Exception ex)
             {
-                InfrastructureLoggerBase(
-                    logger, "JWT token configuration failed.", ex);
+                ServiceLogger.Error(
+                    Level.Infrastructure, $"JWT token configuration failed: {ex.Message}");
                 throw new InvalidJWTTokenException(
                     "Failed to configure JWT token service.");
             }

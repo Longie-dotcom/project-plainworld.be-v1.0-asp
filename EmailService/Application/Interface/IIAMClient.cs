@@ -1,9 +1,7 @@
-﻿using IAMServer.EmailClient.gRPC;
-
-namespace Application.Interface
+﻿namespace Application.Interface
 {
     public interface IIAMClient
     {
-        Task<string> GetUserEmail(string identityNumber);
+        Task<string> GetUserEmail(Guid userId);
     }
 }

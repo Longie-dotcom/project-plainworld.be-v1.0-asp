@@ -1,39 +1,26 @@
+using API.GrpcService;
 using API.Middleware;
 using Application;
-using Application.GrpcService;
 using DotNetEnv;
-using FSA.LaboratoryManagement.Authorization;
 using Infrastructure;
 using Infrastructure.Persistence.Seed;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Console;
+using PlainWorld.Authorization;
 
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // -----------------------------
-// Logging
-// -----------------------------
-var loggerFactory = LoggerFactory.Create(logging =>
-{
-    logging.ClearProviders();
-    logging.AddSimpleConsole(options =>
-    {
-        options.TimestampFormat = "[HH:mm:ss] ";
-        options.ColorBehavior = LoggerColorBehavior.Enabled;
-    });
-    logging.SetMinimumLevel(LogLevel.Information);
-});
-
-// -----------------------------
 // Core setup
 // -----------------------------
 builder.Services.AddGrpc();
-builder.Services.AddInfrastructure(loggerFactory);
+builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 builder.Services.AddControllers();
+// gRPC Service
+builder.Services.AddScoped<IAMGrpcService>();
 
 // -----------------------------
 // Swagger
@@ -109,9 +96,7 @@ app.UseSwaggerUI(c =>
 // -----------------------------
 // Map Grpc
 // -----------------------------
-app.MapGrpcService<PatientGrpcService>();
-app.MapGrpcService<InstrumentGrpcService>();
-app.MapGrpcService<EmailGrpcService>();
+app.MapGrpcService<IAMGrpcService>();
 
 // -----------------------------
 // Middlewares

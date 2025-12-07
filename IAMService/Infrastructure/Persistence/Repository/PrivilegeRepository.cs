@@ -19,12 +19,14 @@ namespace Infrastructure.Persistence.Repository
         #region Methods
         public async Task<bool> ExistsByNameAsync(string name)
         {
-            return await context.Privileges.AnyAsync(p => p.Name == name);
+            return await context.Privileges
+                .AnyAsync(p => p.Name == name);
         }
 
         public async Task<bool> ExistsByNameExceptIdAsync(string name, Guid privilegeId)
         {
-            return await context.Privileges.AnyAsync(p => p.Name == name && p.PrivilegeID != privilegeId);
+            return await context.Privileges
+                .AnyAsync(p => p.Name == name && p.PrivilegeID != privilegeId);
         }
         #endregion
     }

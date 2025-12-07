@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Infrastructure.InfrastructureException
+﻿namespace Infrastructure.InfrastructureException
 {
     public abstract class InfrastructureExceptionBase : Exception
     {

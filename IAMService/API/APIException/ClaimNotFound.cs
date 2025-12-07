@@ -2,7 +2,6 @@
 {
     public class ClaimNotFound : Exception
     {
-        public ClaimNotFound(string roleCode)
-            : base($"Role with code '{roleCode}' was not found.") { }
+        public ClaimNotFound(string message) : base(message) { }
     }
 }

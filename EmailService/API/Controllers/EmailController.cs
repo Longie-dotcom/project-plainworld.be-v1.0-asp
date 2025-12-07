@@ -1,7 +1,7 @@
 ﻿using Application.Interface;
-using FSA.LaboratoryManagement.EmailMessage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PlainWorld.MessageBroker;
 
 namespace API.Controllers
 {
@@ -22,7 +22,6 @@ namespace API.Controllers
         }
 
         #region Methods
-        // GET: api/email
         [HttpGet]
         [AllowAnonymous]
         public ActionResult<List<EmailMessageDTO>> GetEmailMessages()
@@ -31,19 +30,19 @@ namespace API.Controllers
             return Ok(emails);
         }
 
-        // POST: api/email
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> PublishEmail([FromBody] EmailMessageDTO message)
+        public async Task<IActionResult> PublishEmail(
+            [FromBody] EmailMessageDTO message)
         {
             await emailApplication.PublishEmail(message);
             return Ok(new { Message = "Email published successfully" });
         }
 
-        // POST: api/email/by-identity
         [HttpPost("by-identity")]
         [AllowAnonymous]
-        public async Task<IActionResult> PublishEmailByIdentity([FromBody] IdentityNumberMessageDTO message)
+        public async Task<IActionResult> PublishEmailByIdentity(
+            [FromBody] UserIDMessageDTO message)
         {
             await emailApplication.PublishEmailByIdentityNumber(message);
             return Ok(new { Message = "Email published by identity successfully" });

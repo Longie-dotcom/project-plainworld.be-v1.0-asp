@@ -7,7 +7,7 @@ namespace Application.Interface.IService
     {
         string GenerateToken(
             List<Privilege> privileges,
-            string identityNumber, 
+            Guid userId, 
             string email, 
             string fullName, 
             string roleCode);

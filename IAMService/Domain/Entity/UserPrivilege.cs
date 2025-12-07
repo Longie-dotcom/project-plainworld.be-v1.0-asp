@@ -20,7 +20,10 @@ namespace Domain.Entity
         protected UserPrivilege() { }
 
         public UserPrivilege(
-            Guid userPrivilegeId, Guid privilegeId, Guid userId, bool isGranted)
+            Guid userPrivilegeId, 
+            Guid privilegeId, 
+            Guid userId, 
+            bool isGranted)
         {
             UserPrivilegeID = userPrivilegeId;
             PrivilegeID = privilegeId;
@@ -29,10 +32,6 @@ namespace Domain.Entity
         }
 
         #region Methods
-        public void UpdateGranted(bool isGranted)
-        {
-            IsGranted = isGranted;
-        }
         #endregion
     }
 }

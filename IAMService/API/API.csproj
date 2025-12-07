@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FSA.LaboratoryManagement.Authorization" Version="1.0.2" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
@@ -23,6 +22,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="PlainWorld.Authorization" Version="1.0.0" />
+    <PackageReference Include="PlainWorld.Contract" Version="1.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.6" />
   </ItemGroup>

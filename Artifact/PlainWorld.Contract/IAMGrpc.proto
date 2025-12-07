@@ -1,0 +1,26 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "IAMServer.gRPC";
+
+import "google/protobuf/timestamp.proto";
+
+service IAMGrpc
+{
+    rpc GetUser (GetUserRequest) returns (GetUserResponse);
+}
+
+message GetUserRequest
+{
+    string user_id = 1;
+    string created_by = 2;
+    string role = 3;
+}
+
+message GetUserResponse
+{
+    string email = 1;
+    string full_name = 2;
+    string gender = 3;
+    google.protobuf.Timestamp dob = 4;
+    bool is_active = 5;
+}

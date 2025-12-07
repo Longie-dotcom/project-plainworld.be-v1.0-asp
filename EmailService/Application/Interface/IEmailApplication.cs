@@ -1,4 +1,4 @@
-﻿using FSA.LaboratoryManagement.EmailMessage;
+﻿using PlainWorld.MessageBroker;
 
 namespace Application.Interface
 {
@@ -6,6 +6,6 @@ namespace Application.Interface
     {
         List<EmailMessageDTO> GetEmailMessages();
         Task PublishEmail(EmailMessageDTO message);
-        Task PublishEmailByIdentityNumber(IdentityNumberMessageDTO message);
+        Task PublishEmailByIdentityNumber(UserIDMessageDTO message);
     }
 }

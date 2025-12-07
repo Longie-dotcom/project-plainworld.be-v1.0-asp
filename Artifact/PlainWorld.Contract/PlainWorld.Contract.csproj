@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Authors>YourName</Authors>
+		<PackageId>PlainWorld.Contract</PackageId>
+		<Version>1.0.3</Version>
+		<Description>gRPC Contract between services in Plain World project</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="IAMGrpc.proto" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.33.0" />
+		<PackageReference Include="Grpc" Version="2.46.6" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.72.0">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Protobuf Include="IAMGrpc.proto" />
+	</ItemGroup>
+
+</Project>

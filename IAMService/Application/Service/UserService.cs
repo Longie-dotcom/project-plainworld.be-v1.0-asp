@@ -5,8 +5,8 @@ using Application.Interface.IPublisher;
 using Application.Interface.IService;
 using AutoMapper;
 using Domain.Aggregate;
-using Domain.DomainException;
 using Domain.IRepository;
+using PlainWorld.MessageBroker;
 
 namespace Application.Service
 {
@@ -15,8 +15,8 @@ namespace Application.Service
         #region Attributes
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
-        private readonly IIAMUpdatePublisher iAMUpdatePublisher;
-        private readonly IIAMDeletePublisher iAMDeletePublisher;
+        private readonly IUserUpdatePublisher iAMUpdatePublisher;
+        private readonly IUserDeletePublisher iAMDeletePublisher;
         #endregion
 
         #region Properties
@@ -25,8 +25,8 @@ namespace Application.Service
         public UserService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IIAMDeletePublisher iAMDeletePublisher,
-            IIAMUpdatePublisher iAMUpdatePublisher)
+            IUserDeletePublisher iAMDeletePublisher,
+            IUserUpdatePublisher iAMUpdatePublisher)
         {
             this.unitOfWork = unitOfWork;
             this.mapper = mapper;
@@ -35,63 +35,10 @@ namespace Application.Service
         }
 
         #region Methods
-        public async Task<UserDetailDTO> GetUserByIdAsync(
-            Guid userId,
-            string createdBy,
-            string role)
-        {
-            var user = await unitOfWork
-                .GetRepository<IUserRepository>()
-                .GetByDetailByIdAsync(userId);
-
-            if (user == null)
-                throw new UserNotFound();
-
-            // Only Admin and Super Admin can see all account
-            if (user.CreatedBy != createdBy && role == RoleKey.LAB_MANAGER)
-                throw new InvalidOwner(
-                    "Invalid account owner, user did not created this user account");
-
-            var dto = mapper.Map<UserDetailDTO>(user);
-
-            // Get privileges of each role
-            var roleDtos = new List<UserRoleDTO>();
-            foreach (var userRole in user.UserRoles)
-            {
-                var roleDto = mapper.Map<RoleDetailDTO>(userRole.Role);
-                roleDto.Privileges =
-                    userRole.Role.RolePrivileges.Select(
-                    p => mapper.Map<PrivilegeDTO>(p.Privilege)).ToList();
-
-                roleDtos.Add(new UserRoleDTO()
-                {
-                    Role = roleDto,
-                    IsActive = userRole.IsActive,
-                });
-            }
-            dto.UserRoles = roleDtos;
-
-            // Get granted privileges of user
-            var privilegeDtos = new List<UserPrivilegeDTO>();
-            foreach (var userPrivilege in user.UserPrivileges)
-            {
-                var privilegeDto = mapper.Map<PrivilegeDTO>(userPrivilege.Privilege);
-
-                privilegeDtos.Add(new UserPrivilegeDTO()
-                {
-                    Privilege = privilegeDto,
-                    IsGranted = userPrivilege.IsGranted,
-                });
-            }
-            dto.UserPrvileges = privilegeDtos;
-
-            return dto;
-        }
-
         public async Task<IEnumerable<UserDTO>> GetUsersAsync(
             string? sortBy,
             QueryUserDTO dto,
-            string createdBy,
+            Guid createdBy,
             string role)
         {
             var users = await unitOfWork
@@ -108,20 +55,37 @@ namespace Application.Service
                     role,
                     sortBy);
 
-            if (!users.Any())
-                throw new UserNotFound();
+            // Validate user accounts existence
+            if (users == null || !users.Any())
+                throw new UserNotFound(
+                    "User account list is empty");
 
             // Map to DTO
-            return users.Select(user => mapper.Map<UserDTO>(user));
+            return mapper.Map<IEnumerable<UserDTO>>(users);
         }
 
-        public async Task<UserDTO> CreateUserAsync(
-            UserCreateDTO dto,
-            string createdBy,
+        public async Task<UserDetailDTO> GetUserByIdAsync(
+            Guid userId,
+            Guid createdBy,
             string role)
         {
-            await unitOfWork.BeginTransactionAsync();
+            var u = await unitOfWork
+                .GetRepository<IUserRepository>()
+                .GetByUserIdAsync(userId);
 
+            // Validate user account existence and its owner
+            var user = ValidateAccountModifying(createdBy, u, role);
+
+            // Only Admin and Super Admin can see all account
+            return mapper.Map<UserDetailDTO>(user);
+        }
+
+        public async Task CreateUserAsync(
+            UserCreateDTO dto,
+            Guid createdBy,
+            string role)
+        {
+            // Validate email
             var existingByEmail = await unitOfWork
                 .GetRepository<IUserRepository>()
                 .ExistsByEmailAsync(dto.Email);
@@ -129,38 +93,24 @@ namespace Application.Service
                 throw new UserAlreadyExists(
                     "Email already registered.");
 
-            var existingByPhone = await unitOfWork
-                .GetRepository<IUserRepository>()
-                .ExistsByPhoneAsync(dto.PhoneNumber);
-            if (existingByPhone)
-                throw new UserAlreadyExists(
-                    "Phone number already registered.");
-
-            var existingByIdentity = await unitOfWork
-                .GetRepository<IUserRepository>()
-                .ExistsByIdentityNumberAsync(dto.IdentityNumber);
-            if (existingByIdentity)
-                throw new UserAlreadyExists(
-                    "Identity number already registered.");
-
+            // Validate role
             if (dto.RoleCodes == null || dto.RoleCodes.Count == 0)
-                throw new InvalidUserAggregateException(
+                throw new RoleNotFound(
                     "User must have at least one role.");
 
+            // Apply domain
             var user = new User(
                 userID: Guid.NewGuid(),
                 email: dto.Email,
                 fullName: dto.FullName,
                 password: dto.Password,
                 dob: dto.DateOfBirth,
-                address: dto.Address,
                 gender: dto.Gender,
-                phone: dto.PhoneNumber,
-                identityNumber: dto.IdentityNumber,
                 createdBy: createdBy,
                 isActive: true
             );
 
+            // Validate permited set role and add role
             foreach (var code in dto.RoleCodes)
             {
                 var r = await unitOfWork
@@ -168,108 +118,62 @@ namespace Application.Service
                     .GetByCodeAsync(code);
 
                 if (r == null)
-                    throw new InvalidUserAggregateException(
+                    throw new RoleNotFound(
                         $"Role code '{code}' does not exist.");
 
-                // Validate permited set role
                 ValidateRoleModifying(role, r);
 
                 user.AddRole(r.RoleID);
             }
 
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
             unitOfWork
                 .GetRepository<IUserRepository>()
                 .Add(user);
-            await unitOfWork.CommitAsync(dto.PerformedBy);
-
-            return mapper.Map<UserDTO>(user);
+            await unitOfWork.CommitAsync(createdBy.ToString());
         }
 
-        public async Task DeleteUserAsync(
-            Guid userId,
-            UserDeleteDTO dto,
-            string createdBy,
-            string role)
-        {
-            var u = await unitOfWork
-                .GetRepository<IUserRepository>()
-                .GetByIdAsync(userId);
-
-            var user = ValidateAccountModifying(createdBy, u, role);
-
-            await iAMDeletePublisher.PublishAsync(new IAMRequestDeleteMBDTO()
-            {
-                IdentityNumber = user.IdentityNumber
-            });
-
-            await unitOfWork.BeginTransactionAsync();
-            user.UpdateActive(false);
-            unitOfWork
-                .GetRepository<IUserRepository>()
-                .Update(userId, user);
-            await unitOfWork.CommitAsync(dto.PerformBy);
-        }
-
-        public async Task<UserDTO> UpdateUserAsync(
+        public async Task UpdateUserAsync(
             Guid userId,
             UserUpdateDTO dto,
-            string createdBy,
+            Guid createdBy,
             string role)
         {
-            await unitOfWork.BeginTransactionAsync();
-
             var u = await unitOfWork
                 .GetRepository<IUserRepository>()
-                .GetByDetailByIdAsync(userId);
+                .GetByUserIdAsync(userId);
 
+            // Validate user account existence and its owner
             var user = ValidateAccountModifying(createdBy, u, role);
 
-            // Check if another user contains the email (excluding current user)
-            var existingByEmail = await unitOfWork
-                .GetRepository<IUserRepository>()
-                .GetAllAsync();
-            if (existingByEmail.Any(u => u.UserID != userId && u.Email.Contains(
-                dto.Email,
-                StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new UserAlreadyExists("Email already registered.");
-            }
-
-            // Check if another user contains the phone number (excluding current user)
-            if (existingByEmail.Any(u => u.UserID != userId && u.Phone.Contains(dto.PhoneNumber)))
-            {
-                throw new UserAlreadyExists("Phone number already registered.");
-            }
-
-            // Update fields
+            // Apply domain
             if (!string.IsNullOrWhiteSpace(dto.FullName))
                 user.UpdateFullName(dto.FullName);
-
-            if (!string.IsNullOrWhiteSpace(dto.Address))
-                user.UpdateAddress(dto.Address);
-
-            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
-                user.UpdatePhone(dto.PhoneNumber);
 
             if (!string.IsNullOrWhiteSpace(dto.Gender))
                 user.UpdateGender(dto.Gender);
 
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-                user.UpdateEmail(dto.Email);
-
             if (dto.DateOfBirth != null)
                 user.UpdateDob(dto.DateOfBirth.Value);
 
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                // Check if another user contains the email (excluding current user)
+                var existingByEmail = await unitOfWork
+                    .GetRepository<IUserRepository>()
+                    .GetAllAsync();
+                if (existingByEmail.Any(u => u.UserID != userId && u.Email.Contains(
+                    dto.Email, StringComparison.OrdinalIgnoreCase)))
+                    throw new UserAlreadyExists("Email already registered.");
+                user.UpdateEmail(dto.Email);
+            }
+
+            // Validate permitted update privilege
             var privilegeUpdates = dto.UserPrivilegeUpdateDTOs?
                 .Select(p => (p.IsGranted, p.PrivilegeID))
                 .ToList() ?? new List<(bool IsGranted, Guid PrivilegeID)>();
-
-            // Validate permitted update privilege
             ValidatePermittedPrivilege(user, privilegeUpdates, role);
-
-            await unitOfWork
-                .GetRepository<IUserRepository>()
-                .UpdateUserPrivilegesAsync(userId, privilegeUpdates);
 
             // Validate permited update role
             if (dto.UserRoleUpdateDTOs?.Any() == true)
@@ -280,13 +184,19 @@ namespace Application.Service
                         .GetByIdAsync(rId.RoleID);
 
                     if (r == null)
-                        throw new InvalidUserAggregateException(
+                        throw new RoleNotFound(
                             $"Role with id: '{rId}' does not exist.");
 
                     ValidateRoleModifying(role, r);
                 }
             }
 
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            // Update user privileges
+            await unitOfWork
+                .GetRepository<IUserRepository>()
+                .UpdateUserPrivilegesAsync(userId, privilegeUpdates);
             // Update user roles
             if (dto.UserRoleUpdateDTOs?.Any() == true)
             {
@@ -298,34 +208,69 @@ namespace Application.Service
                     .GetRepository<IUserRepository>()
                     .UpdateUserRolesAsync(userId, roleUpdates);
             }
-
+            // Update user
             unitOfWork
                 .GetRepository<IUserRepository>()
                 .Update(user.UserID, user);
-            await unitOfWork.CommitAsync(dto.PerformedBy);
+            await unitOfWork.CommitAsync(createdBy.ToString());
 
-            await iAMUpdatePublisher.PublishAsync(new IAMRequestUpdateMBDTO()
+            // Publish message
+            await iAMUpdatePublisher.PublishAsync(new UserUpdateRequestDTO()
             {
-                IdentityNumber = user.IdentityNumber,
-                Address = dto.Address,
-                DateOfBirth = dto.DateOfBirth,
+                UserID = user.UserID,
+                Dob = dto.DateOfBirth,
                 FullName = dto.FullName,
                 Gender = dto.Gender,
-                PhoneNumber = dto.PhoneNumber
+                Email = dto.Email,
+                IsActive = user.IsActive,
             });
-
-            return mapper.Map<UserDTO>(user);
         }
 
-        public async Task ChangePasswordAsync(string identityNumber, ChangePasswordDTO dto)
+        public async Task DeleteUserAsync(
+            Guid userId,
+            Guid performedBy,
+            Guid createdBy,
+            string role)
+        {
+            var u = await unitOfWork
+                .GetRepository<IUserRepository>()
+                .GetByIdAsync(userId);
+
+            // Validate user account existence and its owner
+            var user = ValidateAccountModifying(createdBy, u, role);
+
+            // Apply domain
+            user.UpdateActive(false);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IUserRepository>()
+                .Update(userId, user);
+            await unitOfWork.CommitAsync(performedBy.ToString());
+
+            // Publish message
+            await iAMDeletePublisher.PublishAsync(new UserUpdateRequestDTO()
+            {
+                UserID = user.UserID,
+                IsActive = false
+            });
+        }
+
+        public async Task ChangePasswordAsync(
+            Guid userId, 
+            ChangePasswordDTO dto)
         {
             var user = await unitOfWork
                 .GetRepository<IUserRepository>()
-                .GetByIdentityNumberAsync(identityNumber);
+                .GetByUserIdAsync(userId);
 
+            // Validate user account existence
             if (user == null)
-                throw new UserNotFound();
+                throw new UserNotFound(
+                    $"User with user ID: {userId} is not found");
 
+            // Apply domain
             if (dto.NewPassword != dto.NewConfirmedPassword)
                 throw new InvalidChangePassword(
                     "New password and confirmed password are not matched.");
@@ -334,81 +279,76 @@ namespace Application.Service
                 throw new InvalidChangePassword(
                     "Old password does not matched.");
 
-            await unitOfWork.BeginTransactionAsync();
             user.ChangePassword(dto.NewPassword);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
             unitOfWork
                 .GetRepository<IUserRepository>()
                 .Update(user.UserID, user);
-            await unitOfWork.CommitAsync(dto.PerformedBy);
+            await unitOfWork.CommitAsync(userId.ToString());
         }
 
-        public async Task PatientSyncUpdating(IAMConsumeUpdateDTO dto)
+        public async Task UserSyncUpdating(UserUpdateRequestDTO dto)
         {
-            await unitOfWork.BeginTransactionAsync();
-
             var user = await unitOfWork
                 .GetRepository<IUserRepository>()
-                .GetByIdentityNumberAsync(dto.IdentityNumber)
-                ?? throw new UserNotFound();
+                .GetByUserIdAsync(dto.UserID);
 
-            // Update fields
+            // Validate user account existence
+            if (user == null)
+                throw new UserNotFound(
+                    $"Sync-up data can not be executed due to user ID: {dto.UserID} is not found");
+
+            // Apply domain
             if (!string.IsNullOrWhiteSpace(dto.FullName))
                 user.UpdateFullName(dto.FullName);
-
-            if (!string.IsNullOrWhiteSpace(dto.Address))
-                user.UpdateAddress(dto.Address);
-
-            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
-                user.UpdatePhone(dto.PhoneNumber);
 
             if (!string.IsNullOrWhiteSpace(dto.Gender))
                 user.UpdateGender(dto.Gender);
 
-            if (dto.DateOfBirth != null)
-                user.UpdateDob(dto.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue));
+            if (dto.Dob.HasValue)
+                user.UpdateDob(dto.Dob.Value);
 
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                // Check if another user contains the email (excluding current user)
+                var existingByEmail = await unitOfWork
+                    .GetRepository<IUserRepository>()
+                    .GetAllAsync();
+                if (existingByEmail.Any(u => u.UserID != dto.UserID && u.Email.Contains(
+                    dto.Email, StringComparison.OrdinalIgnoreCase)))
+                    throw new UserAlreadyExists("Email already registered.");
+                user.UpdateEmail(dto.Email);
+            }
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
             unitOfWork
                 .GetRepository<IUserRepository>()
                 .Update(user.UserID, user);
-            await unitOfWork.CommitAsync(dto.PerformBy);
+            await unitOfWork.CommitAsync("Other services");
         }
 
-        public async Task PatientSyncDeleting(IAMConsumeDeleteDTO dto)
+        public async Task<UserDetailDTO?> GetUserByIdGrpcAsync(
+            Guid userId)
         {
             var user = await unitOfWork
                 .GetRepository<IUserRepository>()
-                .GetByIdentityNumberAsync(dto.IdentityNumber);
+                .GetByUserIdAsync(userId);
+
+            // Validate user account existence (Allow all to access this user if it existed)
             if (user == null)
-                throw new UserNotFound();
+                throw new UserNotFound(
+                    $"Sync-up data can not be executed due to user ID: {userId} is not found");
 
-            var patientRole = await unitOfWork
-                .GetRepository<IRoleRepository>()
-                .GetByCodeAsync(RoleKey.NORMAL_USER);
-            if (patientRole == null)
-                throw new RoleCodeNotFound(
-                    $"Role code {RoleKey.NORMAL_USER} is not found");
-
-            var updatedRoles = new List<(bool IsActive, Guid RoleId)>
-            {
-                (false, patientRole.RoleID)
-            };
-
-            await unitOfWork
-                .GetRepository<IUserRepository>()
-                .UpdateUserRolesAsync(user.UserID, updatedRoles);
-
-            await unitOfWork.CommitAsync(dto.PerformBy);
+            return mapper.Map<UserDetailDTO>(user);
         }
         #endregion
 
         #region Private Helpers
         private void ValidateRoleModifying(string userRole, Role role)
         {
-            // Make sure lab manager always create lab user account
-            if (userRole == RoleKey.LAB_MANAGER && role.Code != RoleKey.LAB_USER)
-                throw new InvalidOwner(
-                    $"Lab manager can only create lab user account");
-
             // Make sure admin can not create account that has higher nor equal permission as ADMIN or SUPER_ADMIN
             if (userRole == RoleKey.ADMIN && (
                 role.Code == RoleKey.ADMIN ||
@@ -419,10 +359,11 @@ namespace Application.Service
             // Super admin can set any role
         }
 
-        private User ValidateAccountModifying(string createdBy, User? user, string role)
+        private User ValidateAccountModifying(Guid createdBy, User? user, string role)
         {
             if (user == null)
-                throw new UserNotFound();
+                throw new UserNotFound(
+                    $"User with user ID is not found with given ID");
 
             if (role == RoleKey.SUPER_ADMIN)
                 return user;

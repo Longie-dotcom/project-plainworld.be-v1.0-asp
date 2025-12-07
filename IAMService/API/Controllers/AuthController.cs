@@ -30,7 +30,16 @@ namespace API.Controllers
             var authResponse = await authService.Login(dto);
             return Ok(authResponse);
         }
-        
+
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<ActionResult> Register(
+            [FromBody] RegisterDTO dto)
+        {
+            await authService.Register(dto);
+            return Ok("User account has been registered successfully.");
+        }
+
         [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(
@@ -64,7 +73,7 @@ namespace API.Controllers
             string email)
         {
             await authService.Logout(email);
-            return Ok(new { message = "User logout successfully." });
+            return Ok("User logout successfully.");
         }
         #endregion
     }

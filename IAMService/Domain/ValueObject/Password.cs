@@ -4,15 +4,19 @@ namespace Domain.ValueObject
 {
     public class Password
     {
-        public string Hashed { get; private set; } = string.Empty;
+        #region Attributes
+        #endregion
 
-        private Password() { }
+        #region Properties 
+        public string Hashed { get; private set; } = string.Empty;
+        #endregion
 
         private Password(string hashed)
         {
             Hashed = hashed;
         }
 
+        #region Methods
         public static Password FromPlain(string plain)
         {
             ValidatePlain(plain);
@@ -31,7 +35,9 @@ namespace Domain.ValueObject
         {
             return BCrypt.Net.BCrypt.Verify(plain, Hashed);
         }
+        #endregion
 
+        #region Private Helpers 
         private static void ValidatePlain(string plain)
         {
             if (string.IsNullOrWhiteSpace(plain))
@@ -39,5 +45,6 @@ namespace Domain.ValueObject
             if (plain.Length < 6)
                 throw new InvalidPasswordOVException("Password must be at least 6 characters.");
         }
+        #endregion
     }
 }

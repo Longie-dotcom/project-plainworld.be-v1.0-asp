@@ -1,9 +1,9 @@
 ﻿using API.Helper;
 using Application.DTO;
 using Application.Interface.IService;
-using FSA.LaboratoryManagement.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PlainWorld.Authorization;
 
 namespace API.Controllers
 {
@@ -59,7 +59,7 @@ namespace API.Controllers
             [FromBody] UserCreateDTO dto)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
-            var user = await userService.CreateUserAsync(
+            await userService.CreateUserAsync(
                 dto, 
                 claims.userId,
                 claims.role);
@@ -72,7 +72,7 @@ namespace API.Controllers
             Guid id, [FromBody] UserUpdateDTO dto)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
-            var updatedUser = await userService.UpdateUserAsync(
+            await userService.UpdateUserAsync(
                 id, 
                 dto, 
                 claims.userId,
@@ -83,23 +83,26 @@ namespace API.Controllers
         [AuthorizePrivilege("DeleteUser")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteUser(
-            Guid id, [FromBody] UserDeleteDTO dto)
+            Guid id)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
             await userService.DeleteUserAsync(
-                id, 
-                dto, 
+                id,
+                claims.userId, 
                 claims.userId,
                 claims.role);
             return Ok("User deleted successfully");
         }
 
         [AuthorizePrivilege("ChangePassword")]
-        [HttpPut("{identityNumber}/change-password")]
+        [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword(
-            string identityNumber, [FromBody] ChangePasswordDTO dto)
+            [FromBody] ChangePasswordDTO dto)
         {
-            await userService.ChangePasswordAsync(identityNumber, dto);
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await userService.ChangePasswordAsync(
+                claims.userId, 
+                dto);
             return Ok("Password changed successfully");
         }
         #endregion

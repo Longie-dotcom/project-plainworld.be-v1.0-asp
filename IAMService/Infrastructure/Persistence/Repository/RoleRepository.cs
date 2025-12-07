@@ -17,18 +17,7 @@ namespace Infrastructure.Persistence.Repository
         public RoleRepository(IAMDBContext context) : base(context) { }
 
         #region Methods
-        public async Task<Role?> GetByCodeAsync(string code)
-        {
-            var role = await context.Roles
-                .AsNoTracking()
-                .Include(r => r.RolePrivileges)
-                    .ThenInclude(rq => rq.Privilege)
-                .FirstOrDefaultAsync(r => r.Code == code);
-                
-            return role;
-        }
-
-        public async Task<IEnumerable<Role>> GetRolesWithFilterAsync()
+        public async Task<IEnumerable<Role>> GetRolesAsync()
         {
             var roles = await context.Roles
                 .Include(r => r.RolePrivileges)
@@ -46,6 +35,17 @@ namespace Infrastructure.Persistence.Repository
                 .Include(r => r.RolePrivileges)
                     .ThenInclude(rq => rq.Privilege)
                 .FirstOrDefaultAsync(r => r.RoleID == roleId);
+
+            return role;
+        }
+
+        public async Task<Role?> GetByCodeAsync(string code)
+        {
+            var role = await context.Roles
+                .AsNoTracking()
+                .Include(r => r.RolePrivileges)
+                    .ThenInclude(rq => rq.Privilege)
+                .FirstOrDefaultAsync(r => r.Code == code);
 
             return role;
         }

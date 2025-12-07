@@ -1,4 +1,5 @@
-﻿using FSA.LaboratoryManagement.EmailMessage;
+﻿
+using PlainWorld.MessageBroker;
 
 namespace Application.Interface.IPublisher
 {
