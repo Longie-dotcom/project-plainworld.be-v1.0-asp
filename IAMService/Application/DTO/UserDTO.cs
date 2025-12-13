@@ -72,22 +72,25 @@
         public string IdentityNumber { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
-        public DateTime DateOfBirth { get; set; }
+        public DateTime Dob { get; set; }
         public string Password { get; set; } = string.Empty;
     }
 
     // Update
     public class UserUpdateDTO
     {
-        public List<UserRoleUpdateDTO>? UserRoleUpdateDTOs { get; set; } = new();
-        public List<UserPrivilegeUpdateDTO>? UserPrivilegeUpdateDTOs { get; set; } = new();
         public string? FullName { get; set; } = string.Empty;
-        public DateTime? DateOfBirth { get; set; }
+        public DateTime? Dob { get; set; }
         public string? Gender { get; set; } = string.Empty;
         public string? Email { get; set; } = string.Empty;
     }
 
     public class UserRoleUpdateDTO
+    {
+        public List<UserRoleUpdateItem> Items { get; set; } = new List<UserRoleUpdateItem>();
+    }
+
+    public class UserRoleUpdateItem
     {
         public Guid RoleID { get; set; }
         public bool IsActive { get; set; }
@@ -95,11 +98,15 @@
 
     public class UserPrivilegeUpdateDTO
     {
+        public List<UserPrivilegeUpdateItem> Items { get; set; } = new List<UserPrivilegeUpdateItem>();
+    }
+
+    public class UserPrivilegeUpdateItem
+    {
         public Guid PrivilegeID { get; set; }
         public bool IsGranted { get; set; }
     }
 
-    // Update password
     public class ChangePasswordDTO
     {
         public string NewPassword { get; set; } = string.Empty;

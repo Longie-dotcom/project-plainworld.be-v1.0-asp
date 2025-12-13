@@ -19,11 +19,24 @@ namespace Application.Interface.IService
             UserCreateDTO dto,
             Guid createdBy,
             string role);
-        Task UpdateUserAsync(
+        Task UpdateUserInfoAsync(
             Guid userId, 
             UserUpdateDTO dto,
             Guid createdBy,
             string role);
+
+        Task UpdateUserRolesAsync(
+            Guid userId,
+            UserRoleUpdateDTO roles,
+            Guid createdBy,
+            string roleName);
+
+        Task UpdateUserPrivilegesAsync(
+            Guid userId,
+            UserPrivilegeUpdateDTO privileges,
+            Guid createdBy,
+            string roleName);
+
         Task DeleteUserAsync(
             Guid userId,
             Guid performedBy,

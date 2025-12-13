@@ -28,9 +28,10 @@ namespace API.Controllers
         #region Methods
         [AuthorizePrivilege("ViewRole")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RoleDTO>>> GetAllRoles()
+        public async Task<ActionResult<IEnumerable<RoleDTO>>> GetAllRoles(
+            [FromQuery] QueryRoleDTO dto)
         {
-            var roles = await roleService.GetRoleListAsync();
+            var roles = await roleService.GetRoleListAsync(dto);
             return Ok(roles);
         }
 
@@ -61,11 +62,24 @@ namespace API.Controllers
             Guid roleId, [FromBody] RoleUpdateDTO dto)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
-            await roleService.UpdateRoleAsync(
+            await roleService.UpdateRoleInfoAsync(
                 roleId, 
                 dto,
                 claims.userId);
             return Ok("Role updated successfully");
+        }
+
+        [AuthorizePrivilege("UpdateRole")]
+        [HttpPut("privilege/{roleId:guid}")]
+        public async Task<ActionResult> UpdateRolePrivilege(
+            Guid roleId, [FromBody] RolePrivilegeUpdateDTO dto)
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await roleService.UpdateRolePrivilegeAsync(
+                roleId,
+                dto,
+                claims.userId);
+            return Ok("Role privileges updated successfully");
         }
 
         [AuthorizePrivilege("DeleteRole")]

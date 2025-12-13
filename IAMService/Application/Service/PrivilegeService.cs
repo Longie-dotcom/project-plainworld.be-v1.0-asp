@@ -21,11 +21,14 @@ namespace Infrastructure.Service
         }
 
         #region Methods
-        public async Task<IEnumerable<PrivilegeDTO>> GetPrivilegesAsync()
+        public async Task<IEnumerable<PrivilegeDTO>> GetPrivilegesAsync(QueryPrivilegeDTO dto)
         {
             var privileges = await unitOfWork
                 .GetRepository<IPrivilegeRepository>()
-                .GetAllAsync();
+                .GetRolesWithFilterAsync(
+                    dto.PageIndex,
+                    dto.PageLength,
+                    dto.Search);
 
             // Validate privilege existence
             if (privileges == null || !privileges.Any())
@@ -86,11 +89,11 @@ namespace Infrastructure.Service
                 throw new PrivilegeNotFound(
                     $"Privilege with ID '{privilegeId}' not found.");
 
-            // Validate existed code
-            var existedCode = await unitOfWork
+            // Validate existed name
+            var existedName = await unitOfWork
                 .GetRepository<IPrivilegeRepository>()
-                .ExistsByNameAsync(dto.Name);
-            if (existedCode)
+                .ExistsByNameExceptIdAsync(dto.Name, privilegeId);
+            if (existedName)
                 throw new PrivilegeAlreadyExists(
                     $"Privilege name '{dto.Name}' already exists.");
 

@@ -72,12 +72,40 @@ namespace API.Controllers
             Guid id, [FromBody] UserUpdateDTO dto)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
-            await userService.UpdateUserAsync(
+            await userService.UpdateUserInfoAsync(
                 id, 
                 dto, 
                 claims.userId,
                 claims.role);
             return Ok("User updated successfully");
+        }
+
+        [AuthorizePrivilege("ModifyUser")]
+        [HttpPut("role/{id:guid}")]
+        public async Task<ActionResult> UpdateUserRole(
+            Guid id, [FromBody] UserRoleUpdateDTO dto)
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await userService.UpdateUserRolesAsync(
+                id,
+                dto,
+                claims.userId,
+                claims.role);
+            return Ok("User roles updated successfully");
+        }
+
+        [AuthorizePrivilege("ModifyUser")]
+        [HttpPut("privilege/{id:guid}")]
+        public async Task<ActionResult> UpdateUserPrivilege(
+            Guid id, [FromBody] UserPrivilegeUpdateDTO dto)
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await userService.UpdateUserPrivilegesAsync(
+                id,
+                dto,
+                claims.userId,
+                claims.role);
+            return Ok("User privileges updated successfully");
         }
 
         [AuthorizePrivilege("DeleteUser")]

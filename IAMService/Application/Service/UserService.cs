@@ -104,7 +104,7 @@ namespace Application.Service
                 email: dto.Email,
                 fullName: dto.FullName,
                 password: dto.Password,
-                dob: dto.DateOfBirth,
+                dob: dto.Dob,
                 gender: dto.Gender,
                 createdBy: createdBy,
                 isActive: true
@@ -134,18 +134,21 @@ namespace Application.Service
             await unitOfWork.CommitAsync(createdBy.ToString());
         }
 
-        public async Task UpdateUserAsync(
-            Guid userId,
+        public async Task UpdateUserInfoAsync(
+            Guid userId, 
             UserUpdateDTO dto,
-            Guid createdBy,
+            Guid createdBy, 
             string role)
         {
-            var u = await unitOfWork
+            var user = await unitOfWork
                 .GetRepository<IUserRepository>()
                 .GetByUserIdAsync(userId);
+            
+            if (user == null)
+                throw new UserNotFound(
+                        $"User with user ID: {userId} is not found");
 
-            // Validate user account existence and its owner
-            var user = ValidateAccountModifying(createdBy, u, role);
+            ValidateAccountModifying(createdBy, user, role);
 
             // Apply domain
             if (!string.IsNullOrWhiteSpace(dto.FullName))
@@ -154,8 +157,8 @@ namespace Application.Service
             if (!string.IsNullOrWhiteSpace(dto.Gender))
                 user.UpdateGender(dto.Gender);
 
-            if (dto.DateOfBirth != null)
-                user.UpdateDob(dto.DateOfBirth.Value);
+            if (dto.Dob != null)
+                user.UpdateDob(dto.Dob.Value);
 
             if (!string.IsNullOrWhiteSpace(dto.Email))
             {
@@ -169,61 +172,87 @@ namespace Application.Service
                 user.UpdateEmail(dto.Email);
             }
 
-            // Validate permitted update privilege
-            var privilegeUpdates = dto.UserPrivilegeUpdateDTOs?
-                .Select(p => (p.IsGranted, p.PrivilegeID))
-                .ToList() ?? new List<(bool IsGranted, Guid PrivilegeID)>();
-            ValidatePermittedPrivilege(user, privilegeUpdates, role);
-
-            // Validate permited update role
-            if (dto.UserRoleUpdateDTOs?.Any() == true)
-            {
-                foreach (var rId in dto.UserRoleUpdateDTOs)
-                {
-                    var r = await unitOfWork.GetRepository<IRoleRepository>()
-                        .GetByIdAsync(rId.RoleID);
-
-                    if (r == null)
-                        throw new RoleNotFound(
-                            $"Role with id: '{rId}' does not exist.");
-
-                    ValidateRoleModifying(role, r);
-                }
-            }
-
             // Apply persistence
             await unitOfWork.BeginTransactionAsync();
-            // Update user privileges
-            await unitOfWork
-                .GetRepository<IUserRepository>()
-                .UpdateUserPrivilegesAsync(userId, privilegeUpdates);
-            // Update user roles
-            if (dto.UserRoleUpdateDTOs?.Any() == true)
-            {
-                var roleUpdates = dto.UserRoleUpdateDTOs
-                    .Select(r => (r.IsActive, r.RoleID))
-                    .ToList();
-
-                await unitOfWork
-                    .GetRepository<IUserRepository>()
-                    .UpdateUserRolesAsync(userId, roleUpdates);
-            }
-            // Update user
             unitOfWork
                 .GetRepository<IUserRepository>()
-                .Update(user.UserID, user);
+                .Update(userId, user);
             await unitOfWork.CommitAsync(createdBy.ToString());
 
             // Publish message
             await iAMUpdatePublisher.PublishAsync(new UserUpdateRequestDTO()
             {
                 UserID = user.UserID,
-                Dob = dto.DateOfBirth,
-                FullName = dto.FullName,
-                Gender = dto.Gender,
-                Email = dto.Email,
+                Dob = user.Dob,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
                 IsActive = user.IsActive,
             });
+        }
+
+        public async Task UpdateUserRolesAsync(
+            Guid userId,
+            UserRoleUpdateDTO dto,
+            Guid createdBy,
+            string roleName)
+        {
+            var user = await unitOfWork
+                .GetRepository<IUserRepository>()
+                .GetByUserIdAsync(userId);
+
+            if (user == null)
+                throw new UserNotFound(
+                        $"User with user ID: {userId} is not found");
+
+            // Validate role existence and modifier access permission
+            foreach (var r in dto.Items)
+            {
+                var role = await unitOfWork
+                    .GetRepository<IRoleRepository>()
+                    .GetByIdAsync(r.RoleID);
+                    
+                if (role == null)
+                    throw new RoleNotFound(
+                        $"Role '{r.RoleID}' does not exist.");
+
+                ValidateRoleModifying(roleName, role);
+            }
+
+            var updates = dto.Items.Select(r => (r.IsActive, r.RoleID)).ToList();
+            
+            // Apply peristence
+            await unitOfWork.BeginTransactionAsync();
+            await unitOfWork
+                .GetRepository<IUserRepository>()
+                .UpdateUserRolesAsync(userId, updates);
+            await unitOfWork.CommitAsync(createdBy.ToString());
+        }
+
+        public async Task UpdateUserPrivilegesAsync(
+            Guid userId,
+            UserPrivilegeUpdateDTO dto,
+            Guid createdBy,
+            string roleName)
+        {
+            var user = await unitOfWork
+                .GetRepository<IUserRepository>()
+                .GetByUserIdAsync(userId);
+
+            if (user == null)
+                throw new UserNotFound(
+                        $"User with user ID: {userId} is not found");
+
+            // Validate update user privileges
+            var updates = dto.Items.Select(p => (p.IsGranted, p.PrivilegeID)).ToList();
+            ValidatePermittedPrivilege(user, updates, roleName);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            await unitOfWork
+                .GetRepository<IUserRepository>()
+                .UpdateUserPrivilegesAsync(userId, updates);
+            await unitOfWork.CommitAsync(createdBy.ToString());
         }
 
         public async Task DeleteUserAsync(

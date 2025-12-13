@@ -1,6 +1,7 @@
 ﻿using Domain.Aggregate;
 using Domain.Entity;
 using Domain.IRepository;
+using Infrastructure.InfrastructureException;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repository
@@ -17,15 +18,37 @@ namespace Infrastructure.Persistence.Repository
         public RoleRepository(IAMDBContext context) : base(context) { }
 
         #region Methods
-        public async Task<IEnumerable<Role>> GetRolesAsync()
+        public async Task<IEnumerable<Role>> GetRolesWithFilterAsync(
+            int? pageIndex,
+            int? pageSize,
+            string? search = null)
         {
-            var roles = await context.Roles
-                .Include(r => r.RolePrivileges)
-                    .ThenInclude(rp => rp.Privilege)
-                .AsNoTracking()
-                .ToListAsync();
+            var query = context.Roles.AsQueryable();
 
-            return roles;
+            // 1. Apply search/filter
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(u =>
+                    u.Code.Contains(search) ||
+                    u.Name.Contains(search));
+            }
+
+            // 2. TODO: Apply role-based visibility if needed
+
+            // 3. Apply default sorting (by Code)
+            query = query.OrderBy(u => u.Code);
+
+            // 4. Apply pagination if requested
+            if (pageIndex.HasValue && pageSize.HasValue)
+            {
+                if (pageIndex <= 0) pageIndex = 1;
+                if (pageSize <= 0) pageSize = 10;
+
+                var skip = (pageIndex.Value - 1) * pageSize.Value;
+                query = query.Skip(skip).Take(pageSize.Value);
+            }
+
+            return await query.AsNoTracking().ToListAsync();
         }
 
         public async Task<Role?> GetByDetailByIdAsync(Guid roleId)
@@ -53,19 +76,20 @@ namespace Infrastructure.Persistence.Repository
         public async Task UpdateRolePrivilegesAsync(Guid roleId, IEnumerable<Guid> newPrivilegeIds)
         {
             var role = await context.Roles
-                .Include(r => r.RolePrivileges)
+                .Include(r => r.RolePrivileges) // load tracked RolePrivileges
                 .FirstOrDefaultAsync(r => r.RoleID == roleId);
 
             if (role == null)
-                throw new KeyNotFoundException($"Role with ID {roleId} not found");
+                throw new RepositoryException(
+                    $"Role with role ID: {roleId} is not found");
 
             // Remove all existing privileges
-            context.RemoveRange(role.RolePrivileges);
+            context.RolePrivileges.RemoveRange(role.RolePrivileges);
 
             // Add new privileges
             foreach (var pid in newPrivilegeIds.Distinct())
             {
-                context.Add(new RolePrivilege(Guid.NewGuid(), roleId, pid, true));
+                context.RolePrivileges.Add(new RolePrivilege(Guid.NewGuid(), role.RoleID, pid, true));
             }
 
             await context.SaveChangesAsync();

@@ -19,7 +19,9 @@ namespace Application.Helper
             CreateMap<Role, RoleDTO>();
             CreateMap<Role, RoleDetailDTO>()
                 .ForMember(dest => dest.RolePrivileges,
-                    opt => opt.MapFrom(src => src.RolePrivileges));
+                    opt => opt.MapFrom(src => src.RolePrivileges
+                        .Where(rp => rp.Privilege != null)
+                        .Select(rp => rp.Privilege)));
 
             // Entity
             CreateMap<RolePrivilege, RolePrivilegeDTO>()

@@ -5,9 +5,12 @@ namespace Domain.IRepository
         IGenericRepository<Role>, 
         IRepositoryBase
     {
-        Task<IEnumerable<Role>> GetRolesAsync();
-        Task<Role> GetByDetailByIdAsync(Guid roleId);
-        Task<Role> GetByCodeAsync(string code);
+        Task<IEnumerable<Role>> GetRolesWithFilterAsync(
+            int? pageIndex,
+            int? pageSize,
+            string? search = null);
+        Task<Role?> GetByDetailByIdAsync(Guid roleId);
+        Task<Role?> GetByCodeAsync(string code);
 
         Task UpdateRolePrivilegesAsync(Guid roleId, IEnumerable<Guid> newPrivilegeIds);
     }

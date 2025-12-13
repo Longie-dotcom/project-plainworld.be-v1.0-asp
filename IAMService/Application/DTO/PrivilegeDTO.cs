@@ -8,6 +8,14 @@
         public string Description { get; set; } = string.Empty;
     }
 
+    // Query
+    public class QueryPrivilegeDTO
+    {
+        public int? PageIndex { get; set; }
+        public int? PageLength { get; set; }
+        public string? Search { get; set; }
+    }
+
     // Create
     public class PrivilegeCreateDTO
     {

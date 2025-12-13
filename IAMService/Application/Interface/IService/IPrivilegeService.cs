@@ -4,9 +4,10 @@ namespace Application.Interface.IService
 {
     public interface IPrivilegeService
     {
+        Task<IEnumerable<PrivilegeDTO>> GetPrivilegesAsync(
+            QueryPrivilegeDTO dto);
         Task<PrivilegeDTO> GetPrivilegeByIdAsync(
             Guid privilegeId);
-        Task<IEnumerable<PrivilegeDTO>> GetPrivilegesAsync();
 
         Task CreatePrivilegeAsync(
             PrivilegeCreateDTO dto,

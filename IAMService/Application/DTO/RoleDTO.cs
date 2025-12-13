@@ -9,6 +9,14 @@
         public string Description { get; set; } = string.Empty;
     }
 
+    // Query
+    public class QueryRoleDTO
+    {
+        public int? PageIndex { get; set; }
+        public int? PageLength { get; set; }
+        public string? Search { get; set; }
+    }
+
     // Detail
     public class RoleDetailDTO
     {
@@ -34,7 +42,7 @@
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string RoleCode { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
         public List<Guid> PrivilegeID { get; set; } = new List<Guid>();
     }
 
@@ -43,6 +51,10 @@
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+    }
+
+    public class RolePrivilegeUpdateDTO
+    {
         public List<Guid> PrivilegeID { get; set; } = new List<Guid>();
     }
 }

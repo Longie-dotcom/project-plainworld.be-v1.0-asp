@@ -1,5 +1,6 @@
 ﻿using Application.ApplicationException;
 using Application.DTO;
+using Application.Helper;
 using Application.Interface.IService;
 using AutoMapper;
 using Domain.Aggregate;
@@ -20,11 +21,14 @@ namespace Infrastructure.Service
         }
 
         #region Methods
-        public async Task<IEnumerable<RoleDTO>> GetRoleListAsync()
+        public async Task<IEnumerable<RoleDTO>> GetRoleListAsync(QueryRoleDTO dto)
         {
             var roles = await unitOfWork
                 .GetRepository<IRoleRepository>()
-                .GetRolesAsync();
+                .GetRolesWithFilterAsync(
+                    dto.PageIndex, 
+                    dto.PageLength, 
+                    dto.Search);
 
             // Validate role existence
             if (roles == null || !roles.Any())
@@ -57,17 +61,17 @@ namespace Infrastructure.Service
                 .GetAllAsync();
 
             // Validate role code duplication
-            var existedCode = existedRoles.Where(r => r.Code == dto.RoleCode);
+            var existedCode = existedRoles.Where(r => r.Code == dto.Code);
             if (existedCode.Any())
                 throw new RoleCodeAlreadyExists(
-                    $"Role with code '{dto.RoleCode}' already exists.");
+                    $"Role with code '{dto.Code}' already exists.");
             
             // Apply domain
             var newRole = new Role
             (
                 Guid.NewGuid(),
                 dto.Name,
-                dto.RoleCode,
+                dto.Code,
                 dto.Description
             );
 
@@ -85,7 +89,7 @@ namespace Infrastructure.Service
             await unitOfWork.CommitAsync(createdBy.ToString());
         }
 
-        public async Task UpdateRoleAsync(
+        public async Task UpdateRoleInfoAsync(
             Guid roleId, 
             RoleUpdateDTO dto,
             Guid createdBy)
@@ -103,6 +107,19 @@ namespace Infrastructure.Service
             existing.UpdateName(dto.Name);
             existing.UpdateDescription(dto.Description);
 
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IRoleRepository>()
+                .Update(roleId, existing);
+            await unitOfWork.CommitAsync(createdBy.ToString());
+        }
+
+        public async Task UpdateRolePrivilegeAsync(
+            Guid roleId,
+            RolePrivilegeUpdateDTO dto,
+            Guid createdBy)
+        {
             // Apply persistence
             await unitOfWork.BeginTransactionAsync();
             await unitOfWork

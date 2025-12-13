@@ -27,9 +27,10 @@ namespace API.Controllers
         #region Methods
         [AuthorizePrivilege("ViewPrivilege")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<PrivilegeDTO>>> GetAllPrivileges()
+        public async Task<ActionResult<IEnumerable<PrivilegeDTO>>> GetAllPrivileges(
+            [FromQuery] QueryPrivilegeDTO dto)
         {
-            var Privileges = await privilegeService.GetPrivilegesAsync();
+            var Privileges = await privilegeService.GetPrivilegesAsync(dto);
             return Ok(Privileges);
         }
 
