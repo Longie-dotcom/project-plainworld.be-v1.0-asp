@@ -6,7 +6,6 @@ using Application.Interface.IService;
 using AutoMapper;
 using Domain.Aggregate;
 using Domain.IRepository;
-using PlainWorld.MessageBroker;
 
 namespace Application.Service
 {
@@ -15,8 +14,9 @@ namespace Application.Service
         #region Attributes
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
-        private readonly IUserUpdatePublisher iAMUpdatePublisher;
-        private readonly IUserDeletePublisher iAMDeletePublisher;
+        private readonly IUserDeletePublisher userDeletePublisher;
+        private readonly IUserUpdatePublisher userUpdatePublisher;
+        private readonly IUserCreatePublisher userCreatePublisher;
         #endregion
 
         #region Properties
@@ -25,13 +25,15 @@ namespace Application.Service
         public UserService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IUserDeletePublisher iAMDeletePublisher,
-            IUserUpdatePublisher iAMUpdatePublisher)
+            IUserDeletePublisher userDeletePublisher,
+            IUserUpdatePublisher userUpdatePublisher,
+            IUserCreatePublisher userCreatePublisher)
         {
             this.unitOfWork = unitOfWork;
             this.mapper = mapper;
-            this.iAMDeletePublisher = iAMDeletePublisher;
-            this.iAMUpdatePublisher = iAMUpdatePublisher;
+            this.userDeletePublisher = userDeletePublisher;
+            this.userUpdatePublisher = userUpdatePublisher;
+            this.userCreatePublisher = userCreatePublisher;
         }
 
         #region Methods
@@ -81,7 +83,7 @@ namespace Application.Service
         }
 
         public async Task CreateUserAsync(
-            UserCreateDTO dto,
+            Application.DTO.UserCreateDTO dto,
             Guid createdBy,
             string role)
         {
@@ -132,11 +134,21 @@ namespace Application.Service
                 .GetRepository<IUserRepository>()
                 .Add(user);
             await unitOfWork.CommitAsync(createdBy.ToString());
+
+            // Publish message
+            await userCreatePublisher.PublishAsync(new PlainWorld.MessageBroker.UserCreateDTO()
+            {
+                UserID = user.UserID,
+                Dob = user.Dob,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
+            });
         }
 
         public async Task UpdateUserInfoAsync(
             Guid userId, 
-            UserUpdateDTO dto,
+            Application.DTO.UserUpdateDTO dto,
             Guid createdBy, 
             string role)
         {
@@ -180,7 +192,7 @@ namespace Application.Service
             await unitOfWork.CommitAsync(createdBy.ToString());
 
             // Publish message
-            await iAMUpdatePublisher.PublishAsync(new UserUpdateRequestDTO()
+            await userUpdatePublisher.PublishAsync(new PlainWorld.MessageBroker.UserUpdateDTO()
             {
                 UserID = user.UserID,
                 Dob = user.Dob,
@@ -279,10 +291,9 @@ namespace Application.Service
             await unitOfWork.CommitAsync(performedBy.ToString());
 
             // Publish message
-            await iAMDeletePublisher.PublishAsync(new UserUpdateRequestDTO()
+            await userDeletePublisher.PublishAsync(new PlainWorld.MessageBroker.UserDeleteDTO()
             {
                 UserID = user.UserID,
-                IsActive = false
             });
         }
 
@@ -318,7 +329,7 @@ namespace Application.Service
             await unitOfWork.CommitAsync(userId.ToString());
         }
 
-        public async Task UserSyncUpdating(UserUpdateRequestDTO dto)
+        public async Task UserSyncUpdating(PlainWorld.MessageBroker.UserUpdateDTO dto)
         {
             var user = await unitOfWork
                 .GetRepository<IUserRepository>()

@@ -4,6 +4,6 @@ namespace Application.Interface.IPublisher
 {
     public interface IUserUpdatePublisher
     {
-        Task PublishAsync(UserUpdateRequestDTO dto);
+        Task PublishAsync(UserUpdateDTO dto);
     }
 }

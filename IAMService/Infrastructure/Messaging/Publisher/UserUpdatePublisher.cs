@@ -15,7 +15,7 @@ namespace Infrastructure.MessageBroker.Publisher
             _publishEndpoint = publishEndpoint;
         }
 
-        public async Task PublishAsync(UserUpdateRequestDTO dto)
+        public async Task PublishAsync(UserUpdateDTO dto)
         {
             ServiceLogger.Logging(
                 Level.Infrastructure, $"Publishing user update for user ID: {dto.UserID}");

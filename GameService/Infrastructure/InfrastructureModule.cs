@@ -77,7 +77,8 @@ namespace Infrastructure
                 services.AddMassTransit(x =>
                 {
                     // Add all consumers for this service
-                    x.AddConsumer<Consumer>();
+                    x.AddConsumer<PlayerUpdateConsumer>();
+                    x.AddConsumer<PlayerCreateConsumer>();
 
                     x.UsingRabbitMq((context, cfg) =>
                     {
@@ -101,9 +102,14 @@ namespace Infrastructure
                             h.Password(rabbitPassword);
                         });
 
-                        cfg.ReceiveEndpoint("consumer", e =>
+                        cfg.ReceiveEndpoint("player_info_update_consumer", e =>
                         {
-                            e.ConfigureConsumer<Consumer>(context);
+                            e.ConfigureConsumer<PlayerUpdateConsumer>(context);
+                        });
+
+                        cfg.ReceiveEndpoint("player_info_create_consumer", e =>
+                        {
+                            e.ConfigureConsumer<PlayerCreateConsumer>(context);
                         });
                     });
                 });

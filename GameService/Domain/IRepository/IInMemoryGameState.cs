@@ -4,8 +4,9 @@ namespace Domain.IRepository
 {
     public interface IInMemoryGameState
     {
-        Task<Player> JoinPlayer(Guid id);
+        Task<(Player player, IEnumerable<Player> online)> JoinPlayer(Guid id);
+        void LogoutPlayer(Guid id);
         bool TryGetPlayer(Guid id, out Player player);
-        void RemovePlayer(Guid id);
+        IReadOnlyCollection<Player> GetOnMemoryPlayers();
     }
 }

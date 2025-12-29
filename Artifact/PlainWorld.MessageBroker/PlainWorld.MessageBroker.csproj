@@ -7,7 +7,7 @@
 
 	  <Authors>Long</Authors>
 	  <PackageId>PlainWorld.MessageBroker</PackageId>
-	  <Version>1.0.5</Version>
+	  <Version>1.0.6</Version>
 	  <Description>Message broker DTOs for Plain World Back-end project.</Description>
 
 	  <IsPackable>true</IsPackable>

@@ -5,14 +5,14 @@ using PlainWorld.MessageBroker;
 
 namespace Infrastructure.Messaging.Consumer
 {
-    public class UserUpdateConsumer : IConsumer<UserUpdateDTO>
+    public class PlayerUpdateConsumer : IConsumer<UserUpdateDTO>
     {
-        private readonly IUserService _userService;
+        private readonly IPlayerService _playerService;
 
-        public UserUpdateConsumer(
-            IUserService userService)
+        public PlayerUpdateConsumer(
+            IPlayerService playerService)
         {
-            _userService = userService;
+            _playerService = playerService;
         }
 
         public async Task Consume(ConsumeContext<UserUpdateDTO> context)
@@ -21,13 +21,13 @@ namespace Infrastructure.Messaging.Consumer
             {
                 var message = context.Message;
                 ServiceLogger.Logging(
-                    Level.Infrastructure, $"Sync up user data: {message.Email}");
-                await _userService.UserSyncUpdating(message);
+                    Level.Infrastructure, $"Sync up player info data: {message.Email}");
+                await _playerService.UserSyncUpdating(message);
             }
             catch (Exception ex)
             {
                 ServiceLogger.Error(
-                    Level.Infrastructure, $"Failed when sync up user data: {ex.Message}");
+                    Level.Infrastructure, $"Failed when sync up player info data: {ex.Message}");
             }
         }
     }

@@ -2,10 +2,63 @@ using Application;
 using DotNetEnv;
 using Infrastructure;
 using SignalR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 Env.Load(); // load .env variables
 
 var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------------
+// Authentication (JWT)
+// -----------------------------
+var jwtSecret = Env.GetString("JWT_SECRET_KEY");
+var jwtIssuer = Env.GetString("JWT_ISSUER");
+var jwtAudience = Env.GetString("JWT_AUDIENCE");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSecret)
+            ),
+
+            ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs/game"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // -----------------------------
 // CORS
@@ -81,6 +134,7 @@ app.UseSwaggerUI(c =>
 // Middlewares
 // -----------------------------
 app.UseCors();
+app.UseAuthentication();
 app.UseAuthorization();
 
 // -----------------------------

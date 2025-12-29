@@ -1,6 +1,9 @@
 ﻿using Application.ApplicationException;
+using Domain.DomainException;
+using Infrastructure.InfrastructureException;
 using Microsoft.AspNetCore.SignalR;
 using SignalR.Model;
+using SignalR.SignalRException;
 using System.Text.Json;
 
 namespace SignalR.Middleware
@@ -33,16 +36,16 @@ namespace SignalR.Middleware
                 switch (exception)
                 {
                     // Domain Layer Exceptions - 400 Bad Request
-                    //case :
-                    //    response.Type = "Bad Request";
-                    //    response.Message = exception.Message;
-                    //    break;
+                    case PlayerAggregateException:
+                        response.Type = "Bad Request";
+                        response.Message = exception.Message;
+                        break;
 
                     // Not Found Exceptions - 404 Not Found
-                    //case :
-                    //    response.Type = "Not Found";
-                    //    response.Message = exception.Message;
-                    //    break;
+                    case PlayerNotFound:
+                        response.Type = "Not Found";
+                        response.Message = exception.Message;
+                        break;
 
                     // Conflict Exceptions - 409 Conflict
                     //case :
@@ -51,13 +54,13 @@ namespace SignalR.Middleware
                     //    break;
 
                     // Authentication/Authorization Exceptions - 401 Unauthorized
-                    //case :
-                    //    response.Type = "Unauthorized";
-                    //    response.Message = exception.Message;
-                    //    break;
+                    case ClaimNotFound:
+                        response.Type = "Unauthorized";
+                        response.Message = exception.Message;
+                        break;
 
-                    // Application Layer Exceptions - 500 Internal Server Error
-                    case ApplicationExceptionBase:
+                    // Infrastructure Layer Exceptions - 500 Internal Server Error
+                    case RepositoryException:
                         response.Type = "Application Error";
                         response.Message = exception.Message;
                         break;

@@ -116,6 +116,7 @@ namespace Infrastructure
 
                 services.AddScoped<IUserUpdatePublisher, UserUpdatePublisher>();
                 services.AddScoped<IUserDeletePublisher, UserDeletePublisher>();
+                services.AddScoped<IUserCreatePublisher, UserCreatePublisher>();
                 services.AddScoped<IEmailSendPublisher, EmailSendPublisher>();
                 services.AddScoped<ISignalRPublisher, SignalRPublisher>();
 

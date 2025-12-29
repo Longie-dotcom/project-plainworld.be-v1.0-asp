@@ -6,6 +6,7 @@ namespace Domain.Aggregate
     public class AggregateBase
     {
         #region Attributes
+        [BsonId]
         [BsonRepresentation(BsonType.String)]
         public Guid ID { get; private set; } = Guid.Empty;
         #endregion

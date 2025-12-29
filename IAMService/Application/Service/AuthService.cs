@@ -16,9 +16,10 @@ namespace Application.Service
         #region Attributes
         private readonly IUnitOfWork unitOfWork;
         private readonly ITokenService tokenService;
-        private readonly IEmailSendPublisher emailSendPublisher;
         private readonly IMapper mapper;
+        private readonly IEmailSendPublisher emailSendPublisher;
         private readonly ISignalRPublisher signalRPublisher;
+        private readonly IUserCreatePublisher userCreatePublisher;
         #endregion
 
         #region Properties
@@ -27,15 +28,17 @@ namespace Application.Service
         public AuthService(
             IUnitOfWork unitOfWork,
             ITokenService tokenService,
-            IEmailSendPublisher emailSendPublisher,
             IMapper mapper,
-            ISignalRPublisher signalRPublisher)
+            IEmailSendPublisher emailSendPublisher,
+            ISignalRPublisher signalRPublisher,
+            IUserCreatePublisher userCreatePublisher)
         {
             this.unitOfWork = unitOfWork;
             this.tokenService = tokenService;
-            this.emailSendPublisher = emailSendPublisher;
             this.mapper = mapper;
+            this.emailSendPublisher = emailSendPublisher;
             this.signalRPublisher = signalRPublisher;
+            this.userCreatePublisher = userCreatePublisher;
         }
 
         #region Methods
@@ -144,6 +147,16 @@ namespace Application.Service
                 .GetRepository<IUserRepository>()
                 .Add(user);
             await unitOfWork.CommitAsync(userId.ToString());
+
+            // Publish message
+            await userCreatePublisher.PublishAsync(new PlainWorld.MessageBroker.UserCreateDTO()
+            {
+                UserID = user.UserID,
+                Dob = user.Dob,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
+            });
         }
 
         public async Task ForgotPasswordAsync(string email)

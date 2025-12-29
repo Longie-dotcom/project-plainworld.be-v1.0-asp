@@ -1,5 +1,4 @@
 ﻿using Application.DTO;
-using PlainWorld.MessageBroker;
 
 namespace Application.Interface.IService
 {
@@ -16,12 +15,12 @@ namespace Application.Interface.IService
             string role);
 
         Task CreateUserAsync(
-            UserCreateDTO dto,
+            Application.DTO.UserCreateDTO dto,
             Guid createdBy,
             string role);
         Task UpdateUserInfoAsync(
-            Guid userId, 
-            UserUpdateDTO dto,
+            Guid userId,
+            Application.DTO.UserUpdateDTO dto,
             Guid createdBy,
             string role);
 
@@ -47,7 +46,7 @@ namespace Application.Interface.IService
             ChangePasswordDTO dto);
 
         Task UserSyncUpdating(
-            UserUpdateRequestDTO dto);
+            PlainWorld.MessageBroker.UserUpdateDTO dto);
         Task<UserDetailDTO?> GetUserByIdGrpcAsync(
             Guid userId);
     }

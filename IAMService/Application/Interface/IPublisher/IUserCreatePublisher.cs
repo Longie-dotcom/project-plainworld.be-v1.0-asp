@@ -2,8 +2,8 @@
 
 namespace Application.Interface.IPublisher
 {
-    public interface IUserDeletePublisher
+    public interface IUserCreatePublisher
     {
-        Task PublishAsync(UserDeleteDTO dto);
+        Task PublishAsync(UserCreateDTO dto);
     }
 }

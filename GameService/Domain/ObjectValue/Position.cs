@@ -19,7 +19,7 @@
         }
 
         #region Methods
-        public void UpdatePosition(float x, float y)
+        internal void UpdatePosition(float x, float y)
         {
             X = x;
             Y = y;

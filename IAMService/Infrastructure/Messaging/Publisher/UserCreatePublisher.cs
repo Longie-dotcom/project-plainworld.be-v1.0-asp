@@ -5,20 +5,20 @@ using PlainWorld.MessageBroker;
 
 namespace Infrastructure.MessageBroker.Publisher
 {
-    public class UserDeletePublisher : IUserDeletePublisher
+    public class UserCreatePublisher : IUserCreatePublisher
     {
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public UserDeletePublisher(
+        public UserCreatePublisher(
             IPublishEndpoint publishEndpoint)
         {
             _publishEndpoint = publishEndpoint;
         }
 
-        public async Task PublishAsync(UserDeleteDTO dto)
+        public async Task PublishAsync(UserCreateDTO dto)
         {
             ServiceLogger.Logging(
-                Level.Infrastructure, $"Publishing user delete for user ID: {dto.UserID}");
+                Level.Infrastructure, $"Publishing user create for user ID: {dto.UserID}");
             await _publishEndpoint.Publish(dto);
         }
     }
