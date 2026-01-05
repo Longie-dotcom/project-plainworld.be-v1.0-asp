@@ -1,6 +1,6 @@
 ﻿using Domain.Aggregate;
 
-namespace Domain.IRepository
+namespace Domain.Interface.IRepository
 {
     public interface IPlayerRepository : 
         IGenericRepository<Player>,

@@ -18,7 +18,8 @@ namespace SignalR
         #region Properties
         #endregion
 
-        public GameHub(IPlayerService playerService)
+        public GameHub(
+            IPlayerService playerService)
         {
             this.playerService = playerService;
         }
@@ -33,55 +34,78 @@ namespace SignalR
         {
             var identity = Identity();
 
-            ServiceLogger.Logging(
-                Level.API, 
-                $"Player join: {identity.UserId} - {identity.Name}");
+            var result = await playerService.Join(
+                identity.UserId,
+                Context.ConnectionId);
 
-            var player = await playerService.Join(identity.UserId);
+            // Kick old connection if exists
+            if (!string.IsNullOrEmpty(result.oldConnectionId)
+                && result.oldConnectionId != Context.ConnectionId)
+            {
+                ServiceLogger.Logging(
+                    Level.API,
+                    $"Player {identity.UserId} was forced to be logged out from another device: {result.oldConnectionId}");
 
-            // Join group with player ID
+                await Clients.Client(result.oldConnectionId).SendAsync(
+                    OnReceive.OnPlayerForcedLogout);
+
+                await Groups.RemoveFromGroupAsync(
+                    result.oldConnectionId,
+                    identity.UserId.ToString());
+            }
+
             await Groups.AddToGroupAsync(
                 Context.ConnectionId,
                 identity.UserId.ToString());
 
-            // Send back to caller 
-            await Clients.Caller.SendAsync(
-                OnReceive.OnPlayerJoin,
-                player.client);
+            // Send back to caller
             await Clients.Caller.SendAsync(
                 OnReceive.OnPlayerEntityOnline,
-                player.online);
+                result.online);
+
+            await Clients.Caller.SendAsync(
+                OnReceive.OnPlayerJoin,
+                result.client);
 
             // Broadcast to everyone else except caller
             await Clients.Others.SendAsync(
                 OnReceive.OnPlayerEntityJoin,
-                player.entity);
+                result.entity);
+
+            ServiceLogger.Logging(
+                Level.API,
+                $"Player {identity.UserId}: {Context.ConnectionId} was logged in");
         }
 
         public async Task PlayerLogout()
         {
             var identity = Identity();
 
-            ServiceLogger.Logging(
-                Level.API, 
-                $"Player logout: {identity.UserId} - {identity.Name}");
+            // Remove gameplay state (safe if already logged out)
+            var playerId = playerService.Logout(
+                identity.UserId, 
+                Context.ConnectionId);
 
-            var player = playerService.Logout(identity.UserId);
+            if (!playerId.HasValue)
+                return;
 
-            // Leave group with player ID
             await Groups.RemoveFromGroupAsync(
                 Context.ConnectionId,
                 identity.UserId.ToString());
 
-            // Send back to caller 
+            // Send back to caller
             await Clients.Caller.SendAsync(
                 OnReceive.OnPlayerLogout,
-                player.client);
+                playerId.Value);
 
             // Broadcast to everyone else except caller
             await Clients.Others.SendAsync(
                 OnReceive.OnPlayerEntityLogout,
-                player.entity);
+                playerId.Value);
+
+            ServiceLogger.Logging(
+                Level.API,
+                $"Player {identity.UserId} was logged out");
         }
 
         public async Task PlayerMove(PlayerMoveDTO dto)
@@ -107,10 +131,6 @@ namespace SignalR
         {
             var identity = Identity();
 
-            ServiceLogger.Logging(
-                Level.API,
-                $"Player create appearance: {identity.UserId} - {identity.Name}");
-
             var appearance = playerService.CreateAppearance(
                 identity.UserId,
                 dto);
@@ -124,6 +144,31 @@ namespace SignalR
             await Clients.Others.SendAsync(
                 OnReceive.OnPlayerEntityCreateAppearance,
                 appearance.entity);
+
+            ServiceLogger.Logging(
+                Level.API,
+                $"Player {identity.UserId} appearance was changged");
+        }
+
+        public override async Task OnDisconnectedAsync(Exception exception)
+        {
+            if (Context.User?.Identity?.IsAuthenticated == true)
+            {
+                var identity = Identity();
+
+                var playerId = playerService.Logout(
+                    identity.UserId, 
+                    Context.ConnectionId);
+
+                if (playerId.HasValue)
+                {
+                    await Clients.Others.SendAsync(
+                        OnReceive.OnPlayerEntityLogout, 
+                        playerId.Value);
+                }
+            }
+
+            await base.OnDisconnectedAsync(exception);
         }
         #endregion
 

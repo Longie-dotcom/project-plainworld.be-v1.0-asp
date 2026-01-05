@@ -1,4 +1,4 @@
-﻿using Domain.IRepository;
+﻿using Domain.Interface.IRepository;
 using Infrastructure.Persistence.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;

@@ -21,6 +21,7 @@ namespace Application
             services.AddAutoMapper(cfg => { }, typeof(Mapper).Assembly);
 
             // Services
+            services.AddScoped<IConnectionService, ConnectionService>();
             services.AddScoped<IPlayerService, PlayerService>();
 
             // gRPC Service

@@ -3,7 +3,9 @@ using Application.DTO;
 using Application.Interface.IService;
 using AutoMapper;
 using Domain.Aggregate;
-using Domain.IRepository;
+using Domain.Enum;
+using Domain.Interface.IInMemory;
+using Domain.Interface.IRepository;
 using Domain.ObjectValue;
 using PlainWorld.MessageBroker;
 
@@ -12,7 +14,8 @@ namespace Application.Service
     public class PlayerService : IPlayerService
     {
         #region Attributes
-        private readonly IInMemoryGameState inMemoryGameState;
+        private readonly IInMemoryConnectionState inMemoryConnectionState;
+        private readonly IInMemoryPlayerState inMemoryPlayerState;
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
         #endregion
@@ -21,53 +24,72 @@ namespace Application.Service
         #endregion
 
         public PlayerService(
-            IInMemoryGameState inMemoryGameState,
+            IInMemoryConnectionState inMemoryConnectionState,
+            IInMemoryPlayerState inMemoryPlayerState,
             IUnitOfWork unitOfWork,
             IMapper mapper)
         {
-            this.inMemoryGameState = inMemoryGameState;
+            this.inMemoryConnectionState = inMemoryConnectionState;
+            this.inMemoryPlayerState = inMemoryPlayerState;
             this.unitOfWork = unitOfWork;
             this.mapper = mapper;
         }
 
         #region Methods
-        public async Task<(PlayerDTO client, PlayerEntityDTO entity, IEnumerable<PlayerEntityDTO> online)> Join(
-            Guid playerId)
+        public async Task<(
+            PlayerDTO client,
+            PlayerEntityDTO entity,
+            IEnumerable<PlayerEntityDTO> online,
+            string? oldConnectionId
+        )> Join(Guid playerId, string connectionId)
         {
-            // Load player resources
-            var result = await inMemoryGameState.JoinPlayer(playerId);
+            // Take over connection (newest win)
+            var oldConnectionId =
+                inMemoryConnectionState.TakeOver(playerId, connectionId);
+
+            // Save current player data if there are already connection
+            if (oldConnectionId != null)
+                inMemoryPlayerState.Unload(playerId);
+
+            // Reload player data to memory
+            var (player, onlinePlayers) =
+                await inMemoryPlayerState.Load(playerId);
 
             // Return resources for caller and other clients
-            var client = mapper.Map<PlayerDTO>(result.player);
-            var entity = mapper.Map<PlayerEntityDTO>(result.player);
-            var online = mapper.Map<IEnumerable<PlayerEntityDTO>>(result.online);
-            return (client, entity, online);
+            return (
+                mapper.Map<PlayerDTO>(player),
+                mapper.Map<PlayerEntityDTO>(player),
+                mapper.Map<IEnumerable<PlayerEntityDTO>>(onlinePlayers),
+                oldConnectionId
+            );
         }
 
-        public (Guid client, Guid entity) Logout(
-            Guid playerId)
+        public Guid? Logout(Guid playerId, string connectionId)
         {
-            // Save player resources data and remove from memory
-            inMemoryGameState.LogoutPlayer(playerId);
+            // Only owner can logout
+            if (!inMemoryConnectionState.IsOwner(playerId, connectionId))
+                return null;
 
-            return (playerId, playerId);
+            // Remove connection
+            inMemoryConnectionState.Remove(playerId, connectionId);
+
+            // Unload player (persist)
+            inMemoryPlayerState.Unload(playerId);
+
+            return playerId;
         }
 
         public (PlayerMovementDTO client, PlayerEntityMovementDTO entity) Move(
             Guid playerId, 
             PlayerMoveDTO dto)
         {
-            if (inMemoryGameState.TryGetPlayer(playerId, out var player))
+            if (inMemoryPlayerState.TryGet(playerId, out var player))
             {
+                // Replace old movement
                 player.CreateMovement(
-                    dto.Movement.MoveSpeed,
-                    new Position(
-                        dto.Movement.Position.X, 
-                        dto.Movement.Position.Y),
-                    new Position(
-                        dto.Movement.CurrentDirection.X, 
-                        dto.Movement.CurrentDirection.Y),
-                    dto.Movement.CurrentAction);
+                    new Position(dto.Direction.X, dto.Direction.Y),
+                    (EntityAction)dto.Action,
+                    dto.DeltaTime);
 
                 // Return resources for caller and other clients
                 var client = mapper.Map<PlayerMovementDTO>(player);
@@ -82,8 +104,9 @@ namespace Application.Service
             Guid playerId,
             PlayerCreateAppearanceDTO dto)
         {
-            if (inMemoryGameState.TryGetPlayer(playerId, out var player))
+            if (inMemoryPlayerState.TryGet(playerId, out var player))
             {
+                // Replace old appearance
                 player.CreateAppearance(
                     dto.Appearance.HairID,
                     dto.Appearance.GlassesID,

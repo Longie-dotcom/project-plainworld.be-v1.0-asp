@@ -5,7 +5,9 @@ namespace Application.DTO
     // Request DTO
     public class PlayerMoveDTO
     {
-        public PlayerMovement Movement { get; set; } = new PlayerMovement();
+        public PositionDTO Direction { get; set; } = new PositionDTO();
+        public int Action { get; set; }
+        public float DeltaTime { get; set; }
     }
 
     public class PlayerCreateAppearanceDTO

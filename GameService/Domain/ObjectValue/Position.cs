@@ -6,6 +6,7 @@
         #endregion
 
         #region Properties
+        public static readonly Position Zero = new(0f, 0f);
         public float X { get; private set; }
         public float Y { get; private set; }
         #endregion
@@ -19,10 +20,29 @@
         }
 
         #region Methods
-        internal void UpdatePosition(float x, float y)
+        public bool IsZero()
         {
-            X = x;
-            Y = y;
+            return MathF.Abs(X) <= float.Epsilon &&
+                  MathF.Abs(Y) <= float.Epsilon;
+        }
+
+        public Position Add(Position other)
+        {
+            return new(X + other.X, Y + other.Y);
+        }
+
+        public Position Multiply(float scalar)
+        {
+            return new(X * scalar, Y * scalar);
+        }
+
+        public Position Normalized()
+        {
+            var mag = MathF.Sqrt(X * X + Y * Y);
+            if (mag <= float.Epsilon)
+                return Zero;
+
+            return new(X / mag, Y / mag);
         }
         #endregion
     }

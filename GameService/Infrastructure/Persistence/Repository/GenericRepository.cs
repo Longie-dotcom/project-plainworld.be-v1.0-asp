@@ -1,5 +1,5 @@
 ﻿using Domain.Aggregate;
-using Domain.IRepository;
+using Domain.Interface.IRepository;
 using Infrastructure.InfrastructureException;
 using Infrastructure.Persistence.Configuration;
 using MongoDB.Driver;

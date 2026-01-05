@@ -1,5 +1,5 @@
 ﻿using Domain.Aggregate;
-using Domain.IRepository;
+using Domain.Interface.IRepository;
 using Infrastructure.Persistence.Configuration;
 using Infrastructure.Persistence.Enum;
 

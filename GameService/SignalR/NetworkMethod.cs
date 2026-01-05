@@ -7,6 +7,7 @@
         public const string OnPlayerLogout = "OnPlayerLogout";
         public const string OnPlayerMove = "OnPlayerMove";
         public const string OnPlayerCreateAppearance = "OnPlayerCreateAppearance";
+        public const string OnPlayerForcedLogout = "OnPlayerForcedLogout";
 
         // --- Entity Service ---
         public const string OnPlayerEntityJoin = "OnPlayerEntityJoin";

@@ -1,4 +1,5 @@
 ﻿using Domain.DomainException;
+using Domain.Enum;
 using Domain.ObjectValue;
 
 namespace Domain.Entity
@@ -32,6 +33,25 @@ namespace Domain.Entity
         }
 
         #region Methods
+        internal void ApplyInput(
+            Position inputDirection,
+            EntityAction inputAction,
+            float deltaTime)
+        {
+            var dir = inputDirection.Normalized();
+            var action = ValidateAction(inputAction);
+
+            CurrentDirection = dir;
+            CurrentAction = (int)action;
+
+            if (action == EntityAction.RUN && !dir.IsZero())
+            {
+                Position = Position.Add(
+                    dir.Multiply(MoveSpeed * deltaTime)
+                );
+            }
+        }
+
         internal void UpdateMoveSpeed(float moveSpeed)
         {
             ValidateMoveSpeed(moveSpeed);
@@ -57,6 +77,11 @@ namespace Domain.Entity
         #endregion
 
         #region Private Helpers
+        private EntityAction ValidateAction(EntityAction action)
+        { 
+            return action == EntityAction.RUN ? EntityAction.RUN : EntityAction.IDLE;
+        }
+
         private static void ValidateMoveSpeed(float speed)
         {
             if (speed < 0)

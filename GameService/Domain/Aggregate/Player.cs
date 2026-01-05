@@ -1,5 +1,6 @@
 ﻿using Domain.DomainException;
 using Domain.Entity;
+using Domain.Enum;
 using Domain.ObjectValue;
 
 namespace Domain.Aggregate
@@ -66,16 +67,14 @@ namespace Domain.Aggregate
 
         #region Movement
         public void CreateMovement(
-            float moveSpeed,
-            Position position,
-            Position currentDirection,
-            int currentAction)
+            Position direction,
+            EntityAction action,
+            float deltaTime)
         {
-            Movement = new PlayerMovement(
-                moveSpeed,
-                position,
-                currentDirection,
-                currentAction);
+            Movement.ApplyInput(
+                direction,
+                action,
+                deltaTime);
         }
 
         public void UpdateMoveSpeed(float moveSpeed)
@@ -117,10 +116,6 @@ namespace Domain.Aggregate
             HSV eyeColor,
             HSV skinColor)
         {
-            if (Appearance != null && Appearance.IsCreated)
-                throw new PlayerAggregateException(
-                    "Player appearance already created");
-
             Appearance = new PlayerAppearance(
                 hairId,
                 glassesId,

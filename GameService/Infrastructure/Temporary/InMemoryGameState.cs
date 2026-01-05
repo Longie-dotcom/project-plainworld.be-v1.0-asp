@@ -1,11 +1,12 @@
 ﻿using Domain.Aggregate;
-using Domain.IRepository;
+using Domain.Interface.IInMemory;
+using Domain.Interface.IRepository;
 using Infrastructure.InfrastructureException;
 using System.Collections.Concurrent;
 
 namespace Infrastructure.Temporary
 {
-    public class InMemoryGameState : IInMemoryGameState
+    public class InMemoryGameState : IInMemoryPlayerState
     {
         #region Attributes
         private readonly ConcurrentDictionary<Guid, Player> players = new();
@@ -13,6 +14,10 @@ namespace Infrastructure.Temporary
         #endregion
 
         #region Properties
+        public IReadOnlyCollection<Player> Snapshot
+        {
+            get { return players.Values.ToList(); } 
+        }
         #endregion
 
         public InMemoryGameState(
@@ -22,50 +27,38 @@ namespace Infrastructure.Temporary
         }
 
         #region Methods
-        public async Task<(Player player, IEnumerable<Player> online)> JoinPlayer(Guid id)
+        public async Task<(Player player, IEnumerable<Player> online)> Load(Guid playerId)
         {
             var player = await unitOfWork
                 .GetRepository<IPlayerRepository>()
-                .GetByIdAsync(id);
-
+                .GetByIdAsync(playerId);
+            
             if (player == null)
                 throw new RepositoryException(
-                    $"Player id: {id} is not found");
+                    $"Player {playerId} not found");
 
-            players[player.ID] = player;
+            players[playerId] = player;
 
-            // Snapshot online players EXCLUDING self
-            var onlinePlayers = players.Values
-                .Where(p => p.ID != player.ID)
-                .ToList(); // snapshot to avoid concurrent mutation issues
+            var online = players.Values
+                .Where(p => p.ID != playerId)
+                .ToList();
 
-            return (player, onlinePlayers);
+            return (player, online);
         }
 
-        public void LogoutPlayer(Guid id)
+        public void Unload(Guid playerId)
         {
-            Player player;
-            players.TryGetValue(id, out player);
-
-            if (player == null)
-                throw new RepositoryException(
-                    $"Player id: {id} is not found");
+            if (!players.TryRemove(playerId, out var player))
+                return;
 
             unitOfWork
                 .GetRepository<IPlayerRepository>()
-                .Update(id, player);
-
-            players.TryRemove(id, out _);
+                .Update(player.ID, player);
         }
 
-        public bool TryGetPlayer(Guid id, out Player player)
-        {
-            return players.TryGetValue(id, out player);
-        }
-
-        public IReadOnlyCollection<Player> GetOnMemoryPlayers()
-        {
-            return players.Values.ToList();
+        public bool TryGet(Guid playerId, out Player player)
+        { 
+            return players.TryGetValue(playerId, out player);
         }
         #endregion
     }

@@ -1,7 +1,8 @@
 ﻿using Application.Helper;
 using Application.Interface.IGrpcClient;
 using Application.Interface.IMessageBrokerPublisher;
-using Domain.IRepository;
+using Domain.Interface.IInMemory;
+using Domain.Interface.IRepository;
 using Infrastructure.Grpc;
 using Infrastructure.InfrastructureException;
 using Infrastructure.Messaging.Consumer;
@@ -149,24 +150,25 @@ namespace Infrastructure
             }
 
             //======================
-            //4.In memory
+            //4.Temporary
             //======================
             try
             {
                 ServiceLogger.Logging(
-                    Level.Infrastructure, "Configuring in-memory game state.");
+                    Level.Infrastructure, "Configuring temporary states.");
 
-                services.AddSingleton<IInMemoryGameState, InMemoryGameState>();
+                services.AddSingleton<IInMemoryConnectionState, InMemoryConnectionState>();
+                services.AddSingleton<IInMemoryPlayerState, InMemoryGameState>();
 
                 ServiceLogger.Logging(
-                    Level.Infrastructure, "In-memory game state configured successfully.");
+                    Level.Infrastructure, "Temporary states configured successfully.");
             }
             catch (Exception ex)
             {
                 ServiceLogger.Logging(
-                    Level.Infrastructure, $"gRPC configuration failed: {ex.Message}");
-                throw new InMemoryGameStateException(
-                    "Failed to configure in-memory game state.");
+                    Level.Infrastructure, $"Temporary configuration failed: {ex.Message}");
+                throw new TemporaryException(
+                    "Failed to configure temporary states.");
             }
 
             return services;

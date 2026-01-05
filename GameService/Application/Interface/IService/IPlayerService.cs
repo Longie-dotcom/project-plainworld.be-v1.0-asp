@@ -5,12 +5,19 @@ namespace Application.Interface.IService
 {
     public interface IPlayerService
     {
-        // SignalR
-        Task<(PlayerDTO client, PlayerEntityDTO entity, IEnumerable<PlayerEntityDTO> online)> Join(
-            Guid playerId);
+        #region Services (SignalR)
+        Task<(
+            PlayerDTO client, 
+            PlayerEntityDTO entity, 
+            IEnumerable<PlayerEntityDTO> online, 
+            string? oldConnectionId
+        )> Join(
+            Guid playerId,
+            string connectionId);
 
-        (Guid client, Guid entity) Logout(
-            Guid playerId);
+        Guid? Logout(
+            Guid playerId, 
+            string connectionId);
 
         (PlayerMovementDTO client, PlayerEntityMovementDTO entity) Move(
             Guid playerId,
@@ -19,8 +26,12 @@ namespace Application.Interface.IService
         (PlayerAppearanceDTO client, PlayerEntityAppearanceDTO entity) CreateAppearance(
             Guid playerId,
             PlayerCreateAppearanceDTO dto);
+        #endregion
 
+        #region Communication (RabbitMQ)
         void UserSyncCreating(UserCreateDTO dto);
+
         Task UserSyncUpdating(UserUpdateDTO dto);
+        #endregion
     }
 }
