@@ -1,2 +1,2 @@
-docker build -t longdong123/plainworld-apigateway:latest .
-docker push longdong123/plainworld-apigateway:latest
+docker build -t longdong123/shroomfall-apigateway:latest .
+docker push longdong123/shroomfall-apigateway:latest

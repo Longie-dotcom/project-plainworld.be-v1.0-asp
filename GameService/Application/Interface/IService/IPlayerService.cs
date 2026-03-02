@@ -7,25 +7,30 @@ namespace Application.Interface.IService
     {
         #region Services (SignalR)
         Task<(
-            PlayerDTO client, 
-            PlayerEntityDTO entity, 
-            IEnumerable<PlayerEntityDTO> online, 
+            PlayerDTO client,
+            PlayerEntityDTO entity,
+            IEnumerable<PlayerEntityDTO> onlinePlayers,
+            IEnumerable<GrayShroomEntityDTO> onlineGrayShrooms,
             string? oldConnectionId
         )> Join(
             Guid playerId,
             string connectionId);
 
         Guid? Logout(
-            Guid playerId, 
+            Guid playerId,
             string connectionId);
 
-        (PlayerMovementDTO client, PlayerEntityMovementDTO entity) Move(
+        (PlayerActDTO client, PlayerEntityActDTO entity) Act(
             Guid playerId,
-            PlayerMoveDTO dto);
+            PlayerActsDTO dto);
 
         (PlayerAppearanceDTO client, PlayerEntityAppearanceDTO entity) CreateAppearance(
             Guid playerId,
             PlayerCreateAppearanceDTO dto);
+
+        ChatDTO SendChat(
+            Guid playerId,
+            ChatSendDTO dto);
         #endregion
 
         #region Communication (RabbitMQ)

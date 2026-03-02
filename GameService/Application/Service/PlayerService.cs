@@ -15,7 +15,9 @@ namespace Application.Service
     {
         #region Attributes
         private readonly IInMemoryConnectionState inMemoryConnectionState;
+        private readonly IInMemoryChatState inMemoryChatState;
         private readonly IInMemoryPlayerState inMemoryPlayerState;
+        private readonly IInMemoryGrayShroomState inMemoryGrayShroomState;
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
         #endregion
@@ -25,12 +27,16 @@ namespace Application.Service
 
         public PlayerService(
             IInMemoryConnectionState inMemoryConnectionState,
+            IInMemoryChatState inMemoryChatState,
             IInMemoryPlayerState inMemoryPlayerState,
+            IInMemoryGrayShroomState inMemoryGrayShroomState,
             IUnitOfWork unitOfWork,
             IMapper mapper)
         {
             this.inMemoryConnectionState = inMemoryConnectionState;
+            this.inMemoryChatState = inMemoryChatState;
             this.inMemoryPlayerState = inMemoryPlayerState;
+            this.inMemoryGrayShroomState = inMemoryGrayShroomState;
             this.unitOfWork = unitOfWork;
             this.mapper = mapper;
         }
@@ -39,7 +45,8 @@ namespace Application.Service
         public async Task<(
             PlayerDTO client,
             PlayerEntityDTO entity,
-            IEnumerable<PlayerEntityDTO> online,
+            IEnumerable<PlayerEntityDTO> onlinePlayers,
+            IEnumerable<GrayShroomEntityDTO> onlineGrayShrooms,
             string? oldConnectionId
         )> Join(Guid playerId, string connectionId)
         {
@@ -55,11 +62,15 @@ namespace Application.Service
             var (player, onlinePlayers) =
                 await inMemoryPlayerState.Load(playerId);
 
+            // Reload world entities
+            var onlineGrayShrooms = inMemoryGrayShroomState.GetAll();
+
             // Return resources for caller and other clients
             return (
                 mapper.Map<PlayerDTO>(player),
                 mapper.Map<PlayerEntityDTO>(player),
                 mapper.Map<IEnumerable<PlayerEntityDTO>>(onlinePlayers),
+                mapper.Map<IEnumerable<GrayShroomEntityDTO>>(onlineGrayShrooms),
                 oldConnectionId
             );
         }
@@ -79,21 +90,21 @@ namespace Application.Service
             return playerId;
         }
 
-        public (PlayerMovementDTO client, PlayerEntityMovementDTO entity) Move(
-            Guid playerId, 
-            PlayerMoveDTO dto)
+        public (PlayerActDTO client, PlayerEntityActDTO entity) Act(
+            Guid playerId,
+            PlayerActsDTO dto)
         {
             if (inMemoryPlayerState.TryGet(playerId, out var player))
             {
-                // Replace old movement
-                player.CreateMovement(
+                // Replace old action
+                player.CreateAction(
                     new Position(dto.Direction.X, dto.Direction.Y),
                     (EntityAction)dto.Action,
                     dto.DeltaTime);
 
                 // Return resources for caller and other clients
-                var client = mapper.Map<PlayerMovementDTO>(player);
-                var entity = mapper.Map<PlayerEntityMovementDTO>(player);
+                var client = mapper.Map<PlayerActDTO>(player);
+                var entity = mapper.Map<PlayerEntityActDTO>(player);
                 return (client, entity);
             }
 
@@ -142,6 +153,30 @@ namespace Application.Service
             throw new PlayerNotFound($"Player id: {playerId} not found in memory");
         }
 
+        public ChatDTO SendChat(
+            Guid playerId,
+            ChatSendDTO dto)
+        {
+            // Recheck connection & player existence
+            if (!inMemoryPlayerState.TryGet(playerId, out var player))
+                throw new PlayerNotFound(
+                    $"Player id: {playerId} not found in memory");
+
+            // Apply domain
+            var chat = new Chat(
+                Guid.NewGuid(),
+                playerId,
+                player.FullName,
+                ChatType.Message,
+                dto.Content);
+
+            // Fire & forget: store only for short-lived memory
+            inMemoryChatState.Add(chat);
+
+            // Return resources for caller and other clients
+            var receive = mapper.Map<ChatDTO>(chat);
+            return receive;
+        }
         #region Other services
         public void UserSyncCreating(UserCreateDTO dto)
         {

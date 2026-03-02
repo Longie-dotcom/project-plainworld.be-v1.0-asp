@@ -61,7 +61,11 @@ namespace SignalR
             // Send back to caller
             await Clients.Caller.SendAsync(
                 OnReceive.OnPlayerEntityOnline,
-                result.online);
+                result.onlinePlayers);
+
+            await Clients.Caller.SendAsync(
+                OnReceive.OnGrayShroomEntityOnline,
+                result.onlineGrayShrooms);
 
             await Clients.Caller.SendAsync(
                 OnReceive.OnPlayerJoin,
@@ -108,22 +112,22 @@ namespace SignalR
                 $"Player {identity.UserId} was logged out");
         }
 
-        public async Task PlayerMove(PlayerMoveDTO dto)
+        public async Task PlayerAct(PlayerActsDTO dto)
         {
             var identity = Identity();
 
-            var postion = playerService.Move(
+            var postion = playerService.Act(
                 identity.UserId,
                 dto);
 
             // Send back to caller
             await Clients.Caller.SendAsync(
-                OnReceive.OnPlayerMove,
+                OnReceive.OnPlayerAct,
                 postion.client);
 
             // Broadcast to everyone else except caller
             await Clients.Others.SendAsync(
-                OnReceive.OnPlayerEntityMove,
+                OnReceive.OnPlayerEntityAct,
                 postion.entity);
         }
 
@@ -148,6 +152,29 @@ namespace SignalR
             ServiceLogger.Logging(
                 Level.API,
                 $"Player {identity.UserId} appearance was changged");
+        }
+
+        public async Task PlayerChat(ChatSendDTO dto)
+        {
+            var identity = Identity();
+
+            var receive = playerService.SendChat(
+                identity.UserId,
+                dto);
+
+            // Send back to caller
+            await Clients.Caller.SendAsync(
+                OnReceive.OnPlayerChat,
+                receive);
+
+            // Broadcast to everyone else except caller
+            await Clients.Others.SendAsync(
+                OnReceive.OnPlayerEntityChat,
+                receive);
+
+            ServiceLogger.Logging(
+                Level.API,
+                $"Player ID:{identity.UserId} - Player Name:{receive.UserName} chatted: {receive.Content}");
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)

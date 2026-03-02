@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace Infrastructure.Temporary
 {
-    public class InMemoryGameState : IInMemoryPlayerState
+    public class InMemoryPlayerState : IInMemoryPlayerState
     {
         #region Attributes
         private readonly ConcurrentDictionary<Guid, Player> players = new();
@@ -14,19 +14,20 @@ namespace Infrastructure.Temporary
         #endregion
 
         #region Properties
-        public IReadOnlyCollection<Player> Snapshot
-        {
-            get { return players.Values.ToList(); } 
-        }
         #endregion
 
-        public InMemoryGameState(
+        public InMemoryPlayerState(
             IUnitOfWork unitOfWork)
         {
             this.unitOfWork = unitOfWork;
         }
 
         #region Methods
+        public IEnumerable<Player> GetAll()
+        {
+            return players.Values;
+        }
+
         public async Task<(Player player, IEnumerable<Player> online)> Load(Guid playerId)
         {
             var player = await unitOfWork

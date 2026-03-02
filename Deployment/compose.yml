@@ -1,0 +1,114 @@
+version: "3.9"
+
+services:
+  shroomfall-apigateway:
+    image: longdong123/shroomfall-apigateway:latest
+    container_name: shroomfall-apigateway
+    ports:
+      - "7000:7000" # HTTP
+    environment:
+      - ASPNETCORE_URLS=http://+:7000
+    env_file:
+      - .env
+    networks:
+      - shroomfall
+
+  shroomfall-iamms:
+    image: longdong123/shroomfall-iamms:latest
+    container_name: shroomfall-iamms
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    env_file:
+      - .env
+    depends_on:
+      - shroomfall-iamdb
+      - rabbitmq
+    networks:
+      - shroomfall
+
+  shroomfall-iamdb:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: iamdb
+    env_file:
+      - .env
+    ports:
+      - "1433:1433"
+    volumes:
+      - shroomfall-iamdb-data:/var/opt/mssql
+    networks:
+      - shroomfall
+
+  shroomfall-gamems:
+    image: longdong123/shroomfall-gamems:latest
+    container_name: shroomfall-gamems
+    ports:
+      - "5020:5020"
+      - "5021:5021"
+    env_file:
+      - .env
+    depends_on:
+      - shroomfall-gamedb
+      - rabbitmq
+    networks:
+      - shroomfall
+    restart: always
+
+  shroomfall-gamedb:
+    image: mongo:7.0
+    container_name: shroomfall-gamedb
+    restart: always
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    volumes:
+      - shroomfall-gamedb-data:/data/db
+    networks:
+      - shroomfall
+
+  shroomfall-signalrms:
+    image: longdong123/shroomfall-signalrms:latest
+    container_name: shroomfall-signalr
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5100:5100"
+      - "5101:5101"
+    depends_on:
+      - rabbitmq
+    networks:
+      - shroomfall
+
+  shroomfall-emailms:
+    image: longdong123/shroomfall-emailms:latest
+    container_name: shroomfall-emailms
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5200:5200"
+      - "5201:5201"
+    depends_on:
+      - rabbitmq
+    networks:
+      - shroomfall
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
+    env_file:
+      - .env
+    networks:
+      - shroomfall
+
+volumes:
+  shroomfall-gamedb-data:
+  shroomfall-iamdb-data:
+
+networks:
+  shroomfall:

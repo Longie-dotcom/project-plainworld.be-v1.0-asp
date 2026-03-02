@@ -3,6 +3,7 @@ using Application.Interface.IGrpcClient;
 using Application.Interface.IMessageBrokerPublisher;
 using Domain.Interface.IInMemory;
 using Domain.Interface.IRepository;
+using Infrastructure.Background;
 using Infrastructure.Grpc;
 using Infrastructure.InfrastructureException;
 using Infrastructure.Messaging.Consumer;
@@ -158,7 +159,9 @@ namespace Infrastructure
                     Level.Infrastructure, "Configuring temporary states.");
 
                 services.AddSingleton<IInMemoryConnectionState, InMemoryConnectionState>();
-                services.AddSingleton<IInMemoryPlayerState, InMemoryGameState>();
+                services.AddSingleton<IInMemoryChatState, InMemoryChatState>();
+                services.AddSingleton<IInMemoryGrayShroomState, InMemoryGrayShroomState>();
+                services.AddSingleton<IInMemoryPlayerState, InMemoryPlayerState>();
 
                 ServiceLogger.Logging(
                     Level.Infrastructure, "Temporary states configured successfully.");
@@ -170,6 +173,11 @@ namespace Infrastructure
                 throw new TemporaryException(
                     "Failed to configure temporary states.");
             }
+
+            //======================
+            //5.Background Services
+            //======================
+            services.AddHostedService<WorldLoop>();
 
             return services;
         }

@@ -44,6 +44,18 @@
 
             return new(X / mag, Y / mag);
         }
+
+        public float DistanceTo(Position other)
+        {
+            var dx = X - other.X;
+            var dy = Y - other.Y;
+            return MathF.Sqrt(dx * dx + dy * dy);
+        }
+
+        public Position Subtract(Position other)
+        {
+            return new(X - other.X, Y - other.Y);
+        }
         #endregion
     }
 }

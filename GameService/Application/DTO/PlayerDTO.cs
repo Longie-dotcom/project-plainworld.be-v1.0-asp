@@ -3,7 +3,7 @@
 namespace Application.DTO
 {
     // Request DTO
-    public class PlayerMoveDTO
+    public class PlayerActsDTO
     {
         public PositionDTO Direction { get; set; } = new PositionDTO();
         public int Action { get; set; }
@@ -23,7 +23,8 @@ namespace Application.DTO
         public string FullName { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
         public DateTime Dob { get; set; }
-        public PlayerMovement Movement { get; set; } = new PlayerMovement();
+        public Act Act { get; set; } = new Act();
+        public Health Health { get; set; } = new Health();
         public PlayerAppearance Appearance { get; set; } = new PlayerAppearance();
     }
 
@@ -32,20 +33,21 @@ namespace Application.DTO
         public Guid ID { get; set; } = Guid.Empty;
         public string FullName { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
-        public PlayerMovement Movement { get; set; } = new PlayerMovement();
+        public Act Act { get; set; } = new Act();
+        public Health Health { get; set; } = new Health();
         public PlayerAppearance Appearance { get; set; } = new PlayerAppearance();
     }
 
-    public class PlayerMovementDTO
+    public class PlayerActDTO
     {
         public Guid ID { get; set; } = Guid.Empty;
-        public PlayerMovement Movement { get; set; } = new PlayerMovement();
+        public Act Act { get; set; } = new Act();
     }
 
-    public class PlayerEntityMovementDTO
+    public class PlayerEntityActDTO
     {
         public Guid ID { get; set; } = Guid.Empty;
-        public PlayerMovement Movement { get; set; } = new PlayerMovement();
+        public Act Act { get; set; } = new Act();
     }
 
     public class PlayerAppearanceDTO

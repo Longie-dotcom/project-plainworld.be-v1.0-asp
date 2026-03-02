@@ -4,6 +4,8 @@ namespace Domain.Interface.IInMemory
 {
     public interface IInMemoryPlayerState
     {
+        IEnumerable<Player> GetAll();
+
         Task<(Player player, IEnumerable<Player> online)> Load(
             Guid playerId);
 

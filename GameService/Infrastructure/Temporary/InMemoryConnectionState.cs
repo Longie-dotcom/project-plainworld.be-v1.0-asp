@@ -7,14 +7,9 @@ namespace Infrastructure.Temporary
     {
         #region Attributes
         private readonly ConcurrentDictionary<Guid, string> connections = new();
-
         #endregion
 
         #region Properties
-        public IReadOnlyDictionary<Guid, string> Snapshot
-        {
-            get { return connections.ToDictionary(x => x.Key, x => x.Value); }
-        }
         #endregion
 
         public InMemoryConnectionState() { }

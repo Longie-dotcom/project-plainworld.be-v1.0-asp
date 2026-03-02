@@ -10,7 +10,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "plainworld-iamms",
+          "Host": "shroomfall-iamms",
           "Port": 5000
         }
       ]
@@ -25,7 +25,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "plainworld-iamms",
+          "Host": "shroomfall-iamms",
           "Port": 5000
         }
       ]
@@ -40,7 +40,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "plainworld-iamms",
+          "Host": "shroomfall-iamms",
           "Port": 5000
         }
       ]
@@ -55,7 +55,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "plainworld-iamms",
+          "Host": "shroomfall-iamms",
           "Port": 5000
         }
       ]

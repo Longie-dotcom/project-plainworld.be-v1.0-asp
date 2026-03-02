@@ -16,7 +16,8 @@ namespace Domain.Aggregate
         public string Gender { get; private set; }
         public DateTime Dob { get; private set; }
 
-        public PlayerMovement Movement { get; private set; }
+        public Act Act { get; private set; }
+        public Health Health { get; private set; }
         public PlayerAppearance Appearance { get; private set; }
         #endregion
 
@@ -38,6 +39,25 @@ namespace Domain.Aggregate
             FullName = fullName;
             Gender = gender;
             Dob = dob;
+
+            Act = new Act(
+                PlayerConfig.PlayerDefaultMoveSpeed,
+                new Position(PlayerConfig.PlayerDefaultPositionX, PlayerConfig.PlayerDefaultPositionY),
+                new Position(PlayerConfig.PlayerDefaultDirectionX, PlayerConfig.PlayerDefaultDirectionY),
+                (int)PlayerConfig.PlayerDefaultAction,
+                new CollisionBox(
+                    PlayerConfig.CollisionBoxX,
+                    PlayerConfig.CollisionBoxY,
+                    PlayerConfig.CollisionBoxWidth,
+                    PlayerConfig.CollisionBoxHeight
+                ),
+                PlayerConfig.AttackCooldown,
+                PlayerConfig.AttackRange,
+                PlayerConfig.AttackOffset
+            );
+
+            Health = new Health(
+                PlayerConfig.MaxHealth);
         }
 
         #region Methods
@@ -65,40 +85,26 @@ namespace Domain.Aggregate
             Dob = dob;
         }
 
-        #region Movement
-        public void CreateMovement(
+        #region Action
+        public void CreateAction(
             Position direction,
             EntityAction action,
             float deltaTime)
         {
-            Movement.ApplyInput(
+            Act.ApplyInput(
                 direction,
                 action,
                 deltaTime);
         }
 
-        public void UpdateMoveSpeed(float moveSpeed)
+        public void TickCombat(float deltaTime)
         {
-            EnsureMovementCreated();
-            Movement.UpdateMoveSpeed(moveSpeed);
+            Act.TickCombat(deltaTime);
         }
 
-        public void UpdatePosition(Position position)
+        public bool CanHit(Position targetPosition)
         {
-            EnsureMovementCreated();
-            Movement.UpdatePosition(position);
-        }
-
-        public void UpdateDirection(Position direction)
-        {
-            EnsureMovementCreated();
-            Movement.UpdateDirection(direction);
-        }
-
-        public void UpdateAction(int action)
-        {
-            EnsureMovementCreated();
-            Movement.UpdateAction(action);
+            return Act.CanHit(targetPosition);
         }
         #endregion
 
@@ -129,66 +135,10 @@ namespace Domain.Aggregate
                 eyeColor,
                 skinColor);
         }
-
-        public void UpdateHair(string hairId, HSV color)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdateHair(hairId, color);
-        }
-
-        public void UpdateGlasses(string glassesId)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdateGlasses(glassesId);
-        }
-
-        public void UpdateShirt(string shirtId)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdateShirt(shirtId);
-        }
-
-        public void UpdatePant(string pantId, HSV color)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdatePant(pantId, color);
-        }
-
-        public void UpdateShoe(string shoeId)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdateShoe(shoeId);
-        }
-
-        public void UpdateEyes(string eyesId, HSV color)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdateEyes(eyesId, color);
-        }
-
-        public void UpdateSkin(string skinId, HSV color)
-        {
-            EnsureAppearanceCreated();
-            Appearance.UpdateSkin(skinId, color);
-        }
         #endregion
         #endregion
 
         #region Private Helpers
-        private void EnsureMovementCreated()
-        {
-            if (Movement == null)
-                throw new PlayerAggregateException(
-                    "Player movement has not been created");
-        }
-
-        private void EnsureAppearanceCreated()
-        {
-            if (Appearance == null || !Appearance.IsCreated)
-                throw new PlayerAggregateException(
-                    "Player appearance has not been created");
-        }
-
         private void ValidateEmail(string email)
         {
             if (string.IsNullOrEmpty(email))

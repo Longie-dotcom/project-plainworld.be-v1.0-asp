@@ -1,9 +1,10 @@
 using Application;
+using Application.Interface.GameEventPublisher;
 using DotNetEnv;
 using Infrastructure;
-using SignalR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SignalR;
 using System.Text;
 
 Env.Load(); // load .env variables
@@ -74,6 +75,11 @@ builder.Services.AddCors(options =>
             .SetIsOriginAllowed(_ => true);
     });
 });
+
+// -----------------------------
+// Game Event Publisher
+// -----------------------------
+builder.Services.AddSingleton<IGameEventPublisher, GameEventPublisher>();
 
 // -----------------------------
 // Infrastructure, Application (MassTransit + RabbitMQ)
