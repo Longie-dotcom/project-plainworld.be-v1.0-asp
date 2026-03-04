@@ -7,7 +7,7 @@
 
     public static class PlayerConfig
     {
-        public const float PlayerDefaultMoveSpeed = 7f;
+        public const float PlayerDefaultMoveSpeed = 10f;
         public const float PlayerDefaultPositionX = 0f;
         public const float PlayerDefaultPositionY = 0f;
         public const float PlayerDefaultDirectionX = 0f;
@@ -59,5 +59,16 @@
 
         ////// Health
         public const int MaxHealth = 80;
+    }
+
+    public static class ItemConfig
+    {
+        public const string Mushroom = "ITEM_MUSHROOM";
+        public const string Stone = "ITEM_STONE";
+        public const string Wood = "ITEM_WOOD";
+        public const string Chair = "ITEM_CHAIR";
+        public const string Table = "ITEM_TABLE";
+        public const string Furnace = "ITEM_FURNACE";
+        public const string Picture = "ITEM_PICTURE";
     }
 }

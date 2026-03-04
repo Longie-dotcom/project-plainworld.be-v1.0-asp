@@ -4,6 +4,7 @@ using Domain.Enum;
 using Domain.Interface.IInMemory;
 using Infrastructure.Background.System;
 using Microsoft.Extensions.Hosting;
+using System.Data;
 
 namespace Infrastructure.Background
 {
@@ -14,6 +15,8 @@ namespace Infrastructure.Background
         private readonly IGameEventPublisher publisher;
         private readonly IInMemoryPlayerState players;
         private readonly IInMemoryGrayShroomState shrooms;
+        private readonly IInMemoryConnectionState connections;
+        
         private readonly CombatSystem combat;
         private readonly SpawnSystem spawn;
         private readonly BehaviourSystem behaviour;
@@ -26,12 +29,15 @@ namespace Infrastructure.Background
             IMapper mapper,
             IGameEventPublisher publisher,
             IInMemoryPlayerState players,
-            IInMemoryGrayShroomState shrooms)
+            IInMemoryGrayShroomState shrooms,
+            IInMemoryConnectionState connections)
         {
             this.mapper = mapper;
             this.publisher = publisher;
             this.players = players;
             this.shrooms = shrooms;
+            this.connections = connections;
+
             combat = new CombatSystem();
             spawn = new SpawnSystem();
             behaviour = new BehaviourSystem();
@@ -72,6 +78,15 @@ namespace Infrastructure.Background
 
             foreach (var id in result.Despawned)
                 await publisher.DespawnAsync(id);
+
+            foreach (var (playerId, item) in result.Drops)
+            {
+                var connectionId = connections.GetConnection(playerId);
+                if (connectionId != null)
+                {
+                    await publisher.PlayerPickItemAsync(connectionId, item);
+                }
+            }
 
             // Tick
             foreach (var player in players.GetAll())

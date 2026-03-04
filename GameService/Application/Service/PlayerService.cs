@@ -1,4 +1,5 @@
 ﻿using Application.ApplicationException;
+using Application.Common;
 using Application.DTO;
 using Application.Interface.IService;
 using AutoMapper;
@@ -18,6 +19,7 @@ namespace Application.Service
         private readonly IInMemoryChatState inMemoryChatState;
         private readonly IInMemoryPlayerState inMemoryPlayerState;
         private readonly IInMemoryGrayShroomState inMemoryGrayShroomState;
+        private readonly IInMemoryWorldObjectState inMemoryWorldObjectState;
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
         #endregion
@@ -30,6 +32,7 @@ namespace Application.Service
             IInMemoryChatState inMemoryChatState,
             IInMemoryPlayerState inMemoryPlayerState,
             IInMemoryGrayShroomState inMemoryGrayShroomState,
+            IInMemoryWorldObjectState inMemoryWorldObjectState,
             IUnitOfWork unitOfWork,
             IMapper mapper)
         {
@@ -37,6 +40,7 @@ namespace Application.Service
             this.inMemoryChatState = inMemoryChatState;
             this.inMemoryPlayerState = inMemoryPlayerState;
             this.inMemoryGrayShroomState = inMemoryGrayShroomState;
+            this.inMemoryWorldObjectState = inMemoryWorldObjectState;
             this.unitOfWork = unitOfWork;
             this.mapper = mapper;
         }
@@ -47,6 +51,7 @@ namespace Application.Service
             PlayerEntityDTO entity,
             IEnumerable<PlayerEntityDTO> onlinePlayers,
             IEnumerable<GrayShroomEntityDTO> onlineGrayShrooms,
+            IEnumerable<WorldObjectDTO> onlineWorldObjects,
             string? oldConnectionId
         )> Join(Guid playerId, string connectionId)
         {
@@ -65,12 +70,16 @@ namespace Application.Service
             // Reload world entities
             var onlineGrayShrooms = inMemoryGrayShroomState.GetAll();
 
+            // Reload world objects
+            var onlineWorldObjects = inMemoryWorldObjectState.GetAll();
+
             // Return resources for caller and other clients
             return (
                 mapper.Map<PlayerDTO>(player),
                 mapper.Map<PlayerEntityDTO>(player),
                 mapper.Map<IEnumerable<PlayerEntityDTO>>(onlinePlayers),
                 mapper.Map<IEnumerable<GrayShroomEntityDTO>>(onlineGrayShrooms),
+                mapper.Map<IEnumerable<WorldObjectDTO>>(onlineWorldObjects),
                 oldConnectionId
             );
         }
@@ -177,6 +186,43 @@ namespace Application.Service
             var receive = mapper.Map<ChatDTO>(chat);
             return receive;
         }
+
+        public WorldObjectDTO PlaceWorldObject(Guid playerId, PlayerPlaceWorldObjectDTO dto)
+        {
+            // Recheck connection & player existence
+            if (!inMemoryPlayerState.TryGet(playerId, out var player))
+                throw new PlayerNotFound($"Player id: {playerId} not found in memory");
+
+            // Convert PositionDTO to Position
+            var position = new Position(dto.Position.X, dto.Position.Y);
+
+            // Calculate collision box (example: size 1x1)
+            // You can also look up the item size from item catalog if available
+            var collision = new CollisionBox(position.X, position.Y, 1f, 1f);
+
+            // ✅ Check if blocked
+            if (CollisionMap.IsBlocked(collision))
+                throw new InvalidOperationException("Cannot place object: collision detected");
+
+            // Create world object
+            var worldObject = new WorldObject(
+                Guid.NewGuid(),
+                dto.ItemID,
+                position,
+                collision
+            );
+
+            // FIX THE FRONT END!! (SPLIT THE OBJECT TO ANOTHER SERVICE)
+            //// Add the collision to the map for blocking
+            //CollisionMap.AddCollision(collision);
+
+            // Add to memory repo
+            inMemoryWorldObjectState.Add(worldObject);
+
+            // Return DTO for client/server sync
+            return mapper.Map<WorldObjectDTO>(worldObject);
+        }
+
         #region Other services
         public void UserSyncCreating(UserCreateDTO dto)
         {

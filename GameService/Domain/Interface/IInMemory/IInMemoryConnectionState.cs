@@ -17,5 +17,6 @@
         /// Checks ownership.
         /// </summary>
         bool IsOwner(Guid userId, string connectionId);
+        string? GetConnection(Guid userId);
     }
 }

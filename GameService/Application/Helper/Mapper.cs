@@ -14,6 +14,11 @@ namespace Application.Helper
             // Chat
             CreateMap<Chat, ChatDTO>();
 
+            // World Object
+            CreateMap<WorldObject, WorldObjectDTO>()
+                .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.Position))
+                .ForMember(dest => dest.CollisionBox, opt => opt.MapFrom(src => src.CollisionBox));
+
             // Spawning
             CreateMap<Player, PlayerDTO>()
                 .ForMember(dest => dest.Act, opt => opt.MapFrom(src => src.Act))

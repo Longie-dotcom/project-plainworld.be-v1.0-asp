@@ -1,4 +1,5 @@
-﻿using Application.DTO;
+﻿using Application.Common;
+using Application.DTO;
 
 namespace Application.Interface.GameEventPublisher
 {
@@ -9,5 +10,7 @@ namespace Application.Interface.GameEventPublisher
         Task ActAsync(GrayShroomEntityActDTO dto);
 
         Task DespawnAsync(Guid id);
+
+        Task PlayerPickItemAsync(string connectionId, Item item);
     }
 }

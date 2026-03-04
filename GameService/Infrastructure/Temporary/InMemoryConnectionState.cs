@@ -46,6 +46,12 @@ namespace Infrastructure.Temporary
             return connections.TryGetValue(userId, out var existing)
                    && existing == connectionId;
         }
+
+        public string? GetConnection(Guid userId)
+        {
+            connections.TryGetValue(userId, out var connectionId);
+            return connectionId;
+        }
         #endregion
     }
 }

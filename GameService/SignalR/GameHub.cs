@@ -68,6 +68,10 @@ namespace SignalR
                 result.onlineGrayShrooms);
 
             await Clients.Caller.SendAsync(
+                OnReceive.OnWorldObjectPlaced,
+                result.onlineWorldObjects);
+
+            await Clients.Caller.SendAsync(
                 OnReceive.OnPlayerJoin,
                 result.client);
 
@@ -152,6 +156,29 @@ namespace SignalR
             ServiceLogger.Logging(
                 Level.API,
                 $"Player {identity.UserId} appearance was changged");
+        }
+
+        public async Task PlayerPlaceWorldObject(PlayerPlaceWorldObjectDTO dto)
+        {
+            var identity = Identity();
+
+            var receive = playerService.PlaceWorldObject(
+                identity.UserId,
+                dto);
+
+            // Send back to caller
+            await Clients.Caller.SendAsync(
+                OnReceive.OnWorldObjectPlaced,
+                receive);
+
+            // Broadcast to everyone else except caller
+            await Clients.Others.SendAsync(
+                OnReceive.OnWorldObjectPlaced,
+                receive);
+
+            ServiceLogger.Logging(
+                Level.API,
+                $"Player ID:{identity.UserId} - Player Name:{identity.Name} placed a world object has item ID: {receive.ItemID}");
         }
 
         public async Task PlayerChat(ChatSendDTO dto)

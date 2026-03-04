@@ -162,6 +162,7 @@ namespace Infrastructure
                 services.AddSingleton<IInMemoryChatState, InMemoryChatState>();
                 services.AddSingleton<IInMemoryGrayShroomState, InMemoryGrayShroomState>();
                 services.AddSingleton<IInMemoryPlayerState, InMemoryPlayerState>();
+                services.AddSingleton<IInMemoryWorldObjectState, InMemoryWorldObjectState>();
 
                 ServiceLogger.Logging(
                     Level.Infrastructure, "Temporary states configured successfully.");

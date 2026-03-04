@@ -1,5 +1,5 @@
-﻿using Application.DTO;
-using Application.Helper;
+﻿using Application.Common;
+using Application.DTO;
 using Application.Interface.GameEventPublisher;
 using Microsoft.AspNetCore.SignalR;
 
@@ -39,6 +39,14 @@ namespace SignalR
             await hub.Clients.All.SendAsync(
                 OnReceive.OnGrayShroomEntityDespawn,
                 id);
+        }
+
+        public async Task PlayerPickItemAsync(string connectionId, Item item)
+        {
+            await hub.Clients.Client(connectionId).SendAsync(
+                OnReceive.OnPlayerPickItem,
+                item
+            );
         }
         #endregion
     }

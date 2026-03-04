@@ -2,6 +2,9 @@
 
 namespace Application.DTO
 {
+    // Request
+
+    // Response
     public class GrayShroomEntityDTO
     {
         public Guid ID { get; set; } = Guid.Empty;

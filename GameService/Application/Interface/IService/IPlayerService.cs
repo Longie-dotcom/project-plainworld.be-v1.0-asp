@@ -11,6 +11,7 @@ namespace Application.Interface.IService
             PlayerEntityDTO entity,
             IEnumerable<PlayerEntityDTO> onlinePlayers,
             IEnumerable<GrayShroomEntityDTO> onlineGrayShrooms,
+            IEnumerable<WorldObjectDTO> onlineWorldObjects,
             string? oldConnectionId
         )> Join(
             Guid playerId,
@@ -27,6 +28,10 @@ namespace Application.Interface.IService
         (PlayerAppearanceDTO client, PlayerEntityAppearanceDTO entity) CreateAppearance(
             Guid playerId,
             PlayerCreateAppearanceDTO dto);
+
+        WorldObjectDTO PlaceWorldObject(
+            Guid playerId,
+            PlayerPlaceWorldObjectDTO dto);
 
         ChatDTO SendChat(
             Guid playerId,
